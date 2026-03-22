@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>⚽️ 完季食大餐 🍽️ 🍻</title>
+<title>⚽️ 完季食大餐 🍽️🍻</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #0d1117; color: #e6edf3; font-family: -apple-system, sans-serif; }
@@ -26,12 +26,8 @@
   th { padding: 10px 14px; text-align: left; font-size: 12px; color: #8b949e; font-weight: 500; background: #1c2128; }
   td { padding: 10px 14px; border-top: 1px solid #21262d; font-size: 13px; }
   tr:hover td { background: #1c2128; }
-  /* 今周$$$$ 累積罰款 累積總分 粗體大字 */
-  .td-total, .td-cumul-penalty, .td-cumul-pts { font-size: 15px !important; font-weight: 700 !important; }
-  /* 包尾：深紅底 + 左邊紅線 */
   .last-place td { background: #4a0000 !important; }
   .last-place td:first-child { border-left: 4px solid #f85149; }
-  /* 唔過45分：成行highlight */
   .low-score td { background: #2d2b10 !important; }
   .rank-num { color: #8b949e; }
   .vc-badge { color: #f0883e; font-size: 11px; margin-left: 3px; }
@@ -55,7 +51,7 @@
 <body>
 
 <div class="header">
-  <h1>⚽️ 完季食大餐 🍽️ 🍻</h1>
+  <h1>⚽️ 完季食大餐 🍽️🍻</h1>
   <div class="header-right">
     <span class="last-updated" id="last-updated">載入中...</span>
     <button class="admin-toggle" onclick="toggleAdmin()">🔧 更新</button>
@@ -204,8 +200,8 @@ function renderSummaryTable() {
     html += `<tr>
       <td class="rank-num">${i+1}</td>
       <td><strong>${p.name}</strong></td>
-      <td class="td-cumul-penalty">${p.penalty < 0 ? `-$${Math.abs(p.penalty)}` : '$0'}</td>
-      <td class="td-cumul-pts">${p.pts}</td>
+      <td>${p.penalty < 0 ? `-$${Math.abs(p.penalty)}` : '$0'}</td>
+      <td>${p.pts}</td>
     </tr>`;
   });
   html += '</table>';
@@ -256,7 +252,7 @@ function showWeekly(gw) {
   const minPts = Math.min(...gwResults.map(r => r.gross_points));
   const data = PLAYER_ORDER.map(name => gwResults.find(r => r.player_name === name)).filter(Boolean);
 
-  let html = '<table><tr><th>玩家</th><th>今周分</th><th>League罰款</th><th>H2H罰款</th><th>今周$$$$</th><th>累積罰款</th><th>累積總分</th><th>隊長</th><th>Cap分</th><th>成功率</th><th>Chip</th></tr>';
+  let html = '<table><tr><th>玩家</th><th>今周分</th><th>League罰款</th><th>H2H罰款</th><th>今周$$$$</th><th>累積罰款</th><th>累積總分</th><th>隊長</th><th>今周Cap分</th><th>累積Cap分</th><th>成功率</th><th>Chip</th></tr>';
 
   data.forEach(r => {
     const cap = caps.find(c => Number(c.entry_id) === Number(r.entry_id));
@@ -266,14 +262,22 @@ function showWeekly(gw) {
     const capName = cap ? cap.captain.replace(' (VC)', '') : '-';
     const isVC = cap && cap.captain.includes('(VC)');
     const chip = cap ? (CHIP_DISPLAY[cap.chip] || '') : '';
-    const capPts = cap ? cap.captain_pts : '-';
+    const capPtsThisWeek = cap ? cap.captain_pts : '-';
     const capOK = cap ? cap.cap_ok : null;
-    const colorClass = capOK === 1 ? 'cap-ok' : 'cap-fail';
-    const capNameHtml = cap ? `<span class="${colorClass}">${capName}${isVC ? '<span class="vc-badge">(VC)</span>' : ''}</span>` : '-';
+
+    let capNameHtml = '-';
+    if (cap) {
+      const colorClass = capOK === 1 ? 'cap-ok' : 'cap-fail';
+      capNameHtml = `<span class="${colorClass}">${capName}${isVC ? '<span class="vc-badge">(VC)</span>' : ''}</span>`;
+    }
+
+    // 截至本周累積 cap 分
     const allCapsForPlayer = allCapLog.filter(c => c.player_name === r.player_name && c.gw <= gw);
     const ok = allCapsForPlayer.filter(c => c.cap_ok === 1).length;
     const total = allCapsForPlayer.length;
     const rate = total > 0 ? (ok/total*100).toFixed(0) + '%' : '-';
+    const cumulCapPts = allCapsForPlayer.reduce((s,c) => s + (c.captain_pts || 0), 0);
+
     const fmt = v => v === 0 ? '$0' : `-$${Math.abs(v)}`;
 
     html += `<tr class="${rowClass}">
@@ -281,11 +285,12 @@ function showWeekly(gw) {
       <td>${r.gross_points}</td>
       <td>${fmt(r.league_penalty)}</td>
       <td>${fmt(r.h2h_penalty)}</td>
-      <td class="td-total">${fmt(r.total_penalty)}</td>
-      <td class="td-cumul-penalty">${fmt(r.cumul_penalty)}</td>
-      <td class="td-cumul-pts">${r.cumul_net_points}</td>
+      <td>${fmt(r.total_penalty)}</td>
+      <td>${fmt(r.cumul_penalty)}</td>
+      <td>${r.cumul_net_points}</td>
       <td>${capNameHtml}</td>
-      <td>${capPts}</td>
+      <td>${capPtsThisWeek}</td>
+      <td>${cumulCapPts}</td>
       <td>${rate}</td>
       <td>${chip}</td>
     </tr>`;
