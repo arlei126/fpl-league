@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>⚽️ FPL 罰款計數機</title>
+<title>⚽️完季食大餐🍽️🍻</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #0d1117; color: #e6edf3; font-family: -apple-system, sans-serif; }
@@ -26,16 +26,18 @@
   th { padding: 10px 14px; text-align: left; font-size: 12px; color: #8b949e; font-weight: 500; background: #1c2128; }
   td { padding: 10px 14px; border-top: 1px solid #21262d; font-size: 13px; }
   tr:hover td { background: #1c2128; }
-  .penalty { color: #f85149; font-weight: 600; }
-  .green { color: #3fb950; font-weight: 600; }
-.last-place td { color: #ff6b9d !important; }
-  .last-place td strong { color: #ff6b9d !important; }
-  .low-score td { color: #ffd700 !important; }
-  .low-score td strong { color: #ffd700 !important; }
+  /* 包尾：橙色粗邊框 */
+  .last-place td { border-top: 2px solid #f0883e; border-bottom: 2px solid #f0883e; }
+  .last-place td:first-child { border-left: 4px solid #f0883e; }
+  .last-place td:last-child { border-right: 2px solid #f0883e; }
+  /* 唔過45分：成行highlight */
+  .low-score td { background: #2d2b10 !important; }
   .rank-num { color: #8b949e; }
   .vc-badge { color: #f0883e; font-size: 11px; margin-left: 3px; }
+  /* 隊長中唔中顏色 */
+  .cap-ok { color: #3fb950; font-weight: 600; }
+  .cap-fail { color: #f0883e; font-weight: 600; }
   .admin-panel { display: none; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-  .admin-panel.active { display: block; }
   .admin-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
   .admin-input { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 7px 12px; border-radius: 6px; font-size: 13px; }
   .btn-green { background: #238636; border: 1px solid #2ea043; color: #fff; padding: 7px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
@@ -92,7 +94,7 @@
     <button class="back-btn" id="back-btn" onclick="showSummary()" style="display:none">← 返回總覽</button>
   </div>
 
-  <div id="summary-view">
+  <div id="summary-view" style="display:none">
     <div class="grid">
       <div class="card">
         <div class="card-title">💰 全季罰款排行</div>
@@ -105,9 +107,9 @@
     </div>
   </div>
 
-  <div id="weekly-view" style="display:none">
+  <div id="weekly-view">
     <div class="card">
-      <div class="card-title" id="weekly-title">GW 詳情</div>
+      <div class="card-title" id="weekly-title">最新 GW 詳情</div>
       <div class="overflow-x">
         <div id="weekly-table"><div class="loading">載入中...</div></div>
       </div>
@@ -121,18 +123,25 @@ const SUPABASE_URL = 'https://ucwsinzfpvjzdeqncjqc.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjd3NpbnpmcHZqemRlcW5janFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNzAzODUsImV4cCI6MjA4OTc0NjM4NX0.CncnodPpTasZlOaw4ueZDyM4lSdxkOe51PkJ1DtHOZY';
 const ADMIN_PASSWORD = 'fpl2024';
 const LEAGUE_ID = 1406714;
+// 固定順序
 const PLAYER_MAP = {
-  "lai's_dream": 3818341, "Legend Son": 879948, "叒cap撚錯人": 10037,
-  "達蛇的最後探戈": 901186, "和波照YEAH！": 1394163,
-  "Arne slot lalalalala": 3775889, "利記海鮮": 5281742, "來都來了": 6297083
+  "lai's_dream": 3818341,
+  "Legend Son": 879948,
+  "叒cap撚錯人": 10037,
+  "達蛇的最後探戈": 901186,
+  "和波照YEAH！": 1394163,
+  "Arne slot lalalalala": 3775889,
+  "利記海鮮": 5281742,
+  "來都來了": 6297083
 };
+const PLAYER_ORDER = Object.keys(PLAYER_MAP);
 const CHIP_TC_KEYS = ['triple_captain', '3xc'];
 const CHIP_DISPLAY = {
   'triple_captain': '👑 TC', '3xc': '👑 TC',
   'bboost': '🚀 BB', 'wildcard': '🔄 WC', 'freehit': '🆓 FH'
 };
 
-let allResults = [], allCapLog = [];
+let allResults = [], allCapLog = [], latestGW = null;
 
 async function supabaseGet(table, query = '') {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
@@ -166,21 +175,24 @@ async function loadData() {
 
   const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
   if (gws.length > 0) {
+    latestGW = gws[gws.length - 1];
     const sel = document.getElementById('gw-select');
     sel.innerHTML = '<option value="">-- 揀 GW --</option>' + gws.map(g => `<option value="${g}">GW${g}</option>`).join('');
     document.getElementById('gw-bar').style.display = 'flex';
     const latest = allResults.reduce((a,b) => a.updated_at > b.updated_at ? a : b, allResults[0]);
-    document.getElementById('last-updated').textContent = `最後更新：GW${gws[gws.length-1]} · ${new Date(latest.updated_at).toLocaleDateString('zh-HK')}`;
+    document.getElementById('last-updated').textContent = `最後更新：GW${latestGW} · ${new Date(latest.updated_at).toLocaleDateString('zh-HK')}`;
+    // 預設顯示最新 GW
+    showWeekly(latestGW);
   } else {
     document.getElementById('last-updated').textContent = '未有數據';
+    document.getElementById('weekly-table').innerHTML = '<div class="loading">未有數據，請在管理頁面更新</div>';
   }
   renderSummaryTable();
   renderCaptainTable();
 }
 
 function renderSummaryTable() {
-  const players = Object.keys(PLAYER_MAP);
-  const data = players.map(name => {
+  const data = PLAYER_ORDER.map(name => {
     const rows = allResults.filter(r => r.player_name === name).sort((a,b) => b.gw - a.gw);
     const latest = rows[0];
     return { name, penalty: latest ? latest.cumul_penalty : 0, pts: latest ? latest.cumul_net_points : 0 };
@@ -194,7 +206,7 @@ function renderSummaryTable() {
     html += `<tr>
       <td class="rank-num">${i+1}</td>
       <td><strong>${p.name}</strong></td>
-      <td class="${p.penalty < 0 ? 'penalty' : 'green'}">-$${Math.abs(p.penalty)}</td>
+      <td>${p.penalty < 0 ? `-$${Math.abs(p.penalty)}` : '$0'}</td>
       <td>${p.pts}</td>
     </tr>`;
   });
@@ -203,8 +215,7 @@ function renderSummaryTable() {
 }
 
 function renderCaptainTable() {
-  const players = Object.keys(PLAYER_MAP);
-  const data = players.map(name => {
+  const data = PLAYER_ORDER.map(name => {
     const caps = allCapLog.filter(r => r.player_name === name);
     const total = caps.length;
     const ok = caps.filter(c => c.cap_ok === 1).length;
@@ -237,14 +248,19 @@ function onGWSelect() {
 function showWeekly(gw) {
   document.getElementById('summary-view').style.display = 'none';
   document.getElementById('weekly-view').style.display = 'block';
-  document.getElementById('back-btn').style.display = 'inline-block';
+  document.getElementById('back-btn').style.display = 'none';
   document.getElementById('weekly-title').textContent = `GW${gw} 詳情`;
 
-  const data = allResults.filter(r => r.gw === gw).sort((a,b) => b.gross_points - a.gross_points);
+  // 固定順序顯示
+  const gwResults = allResults.filter(r => r.gw === gw);
   const caps = allCapLog.filter(r => r.gw === gw);
-  if (!data.length) { document.getElementById('weekly-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
+  if (!gwResults.length) { document.getElementById('weekly-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
 
-  const minPts = Math.min(...data.map(r => r.gross_points));
+  const minPts = Math.min(...gwResults.map(r => r.gross_points));
+
+  // 按 PLAYER_ORDER 固定順序排列
+  const data = PLAYER_ORDER.map(name => gwResults.find(r => r.player_name === name)).filter(Boolean);
+
   let html = '<table><tr><th>玩家</th><th>今周分</th><th>League罰款</th><th>H2H罰款</th><th>今周$$$$</th><th>累積罰款</th><th>累積總分</th><th>隊長</th><th>Cap分</th><th>成功率</th><th>Chip</th></tr>';
 
   data.forEach(r => {
@@ -252,26 +268,36 @@ function showWeekly(gw) {
     const isLast = r.gross_points === minPts;
     const isLow = r.gross_points < 45 && !isLast;
     const rowClass = isLast ? 'last-place' : (isLow ? 'low-score' : '');
+
     const capName = cap ? cap.captain.replace(' (VC)', '') : '-';
     const isVC = cap && cap.captain.includes('(VC)');
     const chip = cap ? (CHIP_DISPLAY[cap.chip] || '') : '';
     const capPts = cap ? cap.captain_pts : '-';
+    const capOK = cap ? cap.cap_ok : null;
+
+    // 隊長名顏色：綠色=中，橙色=唔中
+    let capNameHtml = '-';
+    if (cap) {
+      const colorClass = capOK === 1 ? 'cap-ok' : 'cap-fail';
+      capNameHtml = `<span class="${colorClass}">${capName}${isVC ? '<span class="vc-badge">(VC)</span>' : ''}</span>`;
+    }
+
     const allCapsForPlayer = allCapLog.filter(c => c.player_name === r.player_name && c.gw <= gw);
     const ok = allCapsForPlayer.filter(c => c.cap_ok === 1).length;
     const total = allCapsForPlayer.length;
     const rate = total > 0 ? (ok/total*100).toFixed(0) + '%' : '-';
 
-    const fmtPenalty = v => v === 0 ? '<span class="green">$0</span>' : `<span class="penalty">-$${Math.abs(v)}</span>`;
+    const fmt = v => v === 0 ? '$0' : `-$${Math.abs(v)}`;
 
     html += `<tr class="${rowClass}">
       <td><strong>${r.player_name}</strong></td>
       <td>${r.gross_points}</td>
-      <td>${fmtPenalty(r.league_penalty)}</td>
-      <td>${fmtPenalty(r.h2h_penalty)}</td>
-      <td>${fmtPenalty(r.total_penalty)}</td>
-      <td class="${r.cumul_penalty < 0 ? 'penalty' : 'green'}">-$${Math.abs(r.cumul_penalty)}</td>
+      <td>${fmt(r.league_penalty)}</td>
+      <td>${fmt(r.h2h_penalty)}</td>
+      <td>${fmt(r.total_penalty)}</td>
+      <td>${fmt(r.cumul_penalty)}</td>
       <td>${r.cumul_net_points}</td>
-      <td>${capName}${isVC ? '<span class="vc-badge">(VC)</span>' : ''}</td>
+      <td>${capNameHtml}</td>
       <td>${capPts}</td>
       <td>${rate}</td>
       <td>${chip}</td>
