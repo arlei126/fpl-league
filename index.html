@@ -24,7 +24,9 @@
   .card-title { padding: 12px 16px; background: #1c2128; font-size: 14px; font-weight: 600; color: #58a6ff; border-bottom: 1px solid #30363d; }
   table { width: 100%; border-collapse: collapse; }
   th { padding: 10px 14px; text-align: left; font-size: 12px; color: #8b949e; font-weight: 500; background: #1c2128; }
+  th.col-important { font-size: 13px; font-weight: 700; color: #e6edf3; }
   td { padding: 10px 14px; border-top: 1px solid #21262d; font-size: 13px; }
+  td.col-important { font-size: 15px; font-weight: 700; }
   tr:hover td { background: #1c2128; }
   .last-place td { background: #4a0000 !important; }
   .last-place td:first-child { border-left: 4px solid #f85149; }
@@ -195,13 +197,13 @@ function renderSummaryTable() {
   if (!data.some(d => d.pts > 0)) {
     document.getElementById('summary-table').innerHTML = '<div class="loading">未有數據</div>'; return;
   }
-  let html = '<table><tr><th>#</th><th>玩家</th><th>累積罰款</th><th>累積總分</th></tr>';
+  let html = '<table><tr><th>#</th><th>玩家</th><th class="col-important">累積罰款</th><th class="col-important">累積總分</th></tr>';
   data.forEach((p, i) => {
     html += `<tr>
       <td class="rank-num">${i+1}</td>
       <td><strong>${p.name}</strong></td>
-      <td>${p.penalty < 0 ? `-$${Math.abs(p.penalty)}` : '$0'}</td>
-      <td>${p.pts}</td>
+      <td class="col-important">${p.penalty < 0 ? `-$${Math.abs(p.penalty)}` : '$0'}</td>
+      <td class="col-important">${p.pts}</td>
     </tr>`;
   });
   html += '</table>';
@@ -220,12 +222,12 @@ function renderCaptainTable() {
   if (!data.some(d => d.total > 0)) {
     document.getElementById('captain-table').innerHTML = '<div class="loading">未有數據</div>'; return;
   }
-  let html = '<table><tr><th>#</th><th>玩家</th><th>Cap 總分</th><th>成功率</th></tr>';
+  let html = '<table><tr><th>#</th><th>玩家</th><th class="col-important">Cap 總分</th><th>成功率</th></tr>';
   data.forEach((p, i) => {
     html += `<tr>
       <td class="rank-num">${i+1}</td>
       <td><strong>${p.name}</strong></td>
-      <td><strong>${p.totalPts}</strong></td>
+      <td class="col-important"><strong>${p.totalPts}</strong></td>
       <td>${p.rate}% (${p.ok}/${p.total})</td>
     </tr>`;
   });
@@ -252,7 +254,7 @@ function showWeekly(gw) {
   const minPts = Math.min(...gwResults.map(r => r.gross_points));
   const data = PLAYER_ORDER.map(name => gwResults.find(r => r.player_name === name)).filter(Boolean);
 
-  let html = '<table><tr><th>玩家</th><th>今周分</th><th>League罰款</th><th>H2H罰款</th><th>今周$$$$</th><th>累積罰款</th><th>累積總分</th><th>隊長</th><th>今周Cap分</th><th>累積Cap分</th><th>成功率</th><th>Chip</th></tr>';
+  let html = '<table><tr><th>玩家</th><th>今周分</th><th>League罰款</th><th>H2H罰款</th><th class="col-important">今周$$$$</th><th class="col-important">累積罰款</th><th class="col-important">累積總分</th><th>隊長</th><th>今周Cap分</th><th>累積Cap分</th><th>成功率</th><th>Chip</th></tr>';
 
   data.forEach(r => {
     const cap = caps.find(c => Number(c.entry_id) === Number(r.entry_id));
@@ -271,13 +273,11 @@ function showWeekly(gw) {
       capNameHtml = `<span class="${colorClass}">${capName}${isVC ? '<span class="vc-badge">(VC)</span>' : ''}</span>`;
     }
 
-    // 截至本周累積 cap 分
     const allCapsForPlayer = allCapLog.filter(c => c.player_name === r.player_name && c.gw <= gw);
     const ok = allCapsForPlayer.filter(c => c.cap_ok === 1).length;
     const total = allCapsForPlayer.length;
     const rate = total > 0 ? (ok/total*100).toFixed(0) + '%' : '-';
     const cumulCapPts = allCapsForPlayer.reduce((s,c) => s + (c.captain_pts || 0), 0);
-
     const fmt = v => v === 0 ? '$0' : `-$${Math.abs(v)}`;
 
     html += `<tr class="${rowClass}">
@@ -285,9 +285,9 @@ function showWeekly(gw) {
       <td>${r.gross_points}</td>
       <td>${fmt(r.league_penalty)}</td>
       <td>${fmt(r.h2h_penalty)}</td>
-      <td>${fmt(r.total_penalty)}</td>
-      <td>${fmt(r.cumul_penalty)}</td>
-      <td>${r.cumul_net_points}</td>
+      <td class="col-important">${fmt(r.total_penalty)}</td>
+      <td class="col-important">${fmt(r.cumul_penalty)}</td>
+      <td class="col-important">${r.cumul_net_points}</td>
       <td>${capNameHtml}</td>
       <td>${capPtsThisWeek}</td>
       <td>${cumulCapPts}</td>
