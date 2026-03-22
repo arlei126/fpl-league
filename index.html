@@ -243,7 +243,7 @@ function showWeekly(gw) {
   if (!data.length) { document.getElementById('weekly-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
 
   const minPts = Math.min(...data.map(r => r.gross_points));
-  let html = '<table><tr><th>玩家</th><th>今周分</th><th>今周罰款</th><th>累積罰款</th><th>累積總分</th><th>隊長</th><th>Cap分</th><th>成功率</th><th>Chip</th></tr>';
+  let html = '<table><tr><th>玩家</th><th>今周分</th><th>League罰款</th><th>H2H罰款</th><th>今周$$$$</th><th>累積罰款</th><th>累積總分</th><th>隊長</th><th>Cap分</th><th>成功率</th><th>Chip</th></tr>';
 
   data.forEach(r => {
     const cap = caps.find(c => c.entry_id === r.entry_id);
@@ -259,10 +259,14 @@ function showWeekly(gw) {
     const total = allCapsForPlayer.length;
     const rate = total > 0 ? (ok/total*100).toFixed(0) + '%' : '-';
 
+    const fmtPenalty = v => v === 0 ? '<span class="green">$0</span>' : `<span class="penalty">-$${Math.abs(v)}</span>`;
+
     html += `<tr class="${rowClass}">
       <td><strong>${r.player_name}</strong></td>
       <td>${r.gross_points}</td>
-      <td class="${r.total_penalty < 0 ? 'penalty' : 'green'}">${r.total_penalty === 0 ? '$0' : `-$${Math.abs(r.total_penalty)}`}</td>
+      <td>${fmtPenalty(r.league_penalty)}</td>
+      <td>${fmtPenalty(r.h2h_penalty)}</td>
+      <td>${fmtPenalty(r.total_penalty)}</td>
       <td class="${r.cumul_penalty < 0 ? 'penalty' : 'green'}">-$${Math.abs(r.cumul_penalty)}</td>
       <td>${r.cumul_net_points}</td>
       <td>${capName}${isVC ? '<span class="vc-badge">(VC)</span>' : ''}</td>
