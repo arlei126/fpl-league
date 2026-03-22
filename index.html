@@ -12,42 +12,26 @@
   .header-right { display: flex; align-items: center; gap: 12px; }
   .last-updated { color: #8b949e; font-size: 12px; }
   .admin-toggle { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-  .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
-
-  /* GW selector */
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
   .gw-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
   .gw-bar-label { color: #8b949e; font-size: 13px; white-space: nowrap; }
   .gw-select { background: #21262d; border: 1px solid #30363d; color: #e6edf3; padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; }
-  .gw-select option { background: #21262d; }
-  .view-all-btn { background: #1f6feb; border: none; color: #fff; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-  .view-all-btn.inactive { background: #21262d; border: 1px solid #30363d; color: #8b949e; }
-
-  /* Grid layout */
+  .back-btn { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .back-btn:hover { background: #30363d; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
-
   .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; }
   .card-title { padding: 12px 16px; background: #1c2128; font-size: 14px; font-weight: 600; color: #58a6ff; border-bottom: 1px solid #30363d; }
-
   table { width: 100%; border-collapse: collapse; }
   th { padding: 10px 14px; text-align: left; font-size: 12px; color: #8b949e; font-weight: 500; background: #1c2128; }
   td { padding: 10px 14px; border-top: 1px solid #21262d; font-size: 13px; }
   tr:hover td { background: #1c2128; }
-
   .penalty { color: #f85149; font-weight: 600; }
   .green { color: #3fb950; font-weight: 600; }
   .last-place td { background: #2d1515 !important; }
   .low-score td { background: #2d2b10 !important; }
   .rank-num { color: #8b949e; }
   .vc-badge { color: #f0883e; font-size: 11px; margin-left: 3px; }
-
-  /* Weekly detail */
-  .weekly-detail { display: none; }
-  .weekly-detail.active { display: block; }
-  .back-btn { background: none; border: 1px solid #30363d; color: #8b949e; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; margin-bottom: 16px; }
-  .back-btn:hover { background: #21262d; }
-
-  /* Admin panel */
   .admin-panel { display: none; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
   .admin-panel.active { display: block; }
   .admin-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
@@ -60,9 +44,8 @@
   .status-msg.err { color: #f85149; }
   .admin-section-label { color: #8b949e; font-size: 12px; margin-bottom: 6px; }
   .divider { border-top: 1px solid #30363d; margin: 14px 0; }
-
   .loading { padding: 40px; text-align: center; color: #8b949e; }
-  .chip-badge { font-size: 11px; margin-left: 4px; }
+  .overflow-x { overflow-x: auto; }
 </style>
 </head>
 <body>
@@ -77,7 +60,6 @@
 
 <div class="container">
 
-  <!-- Admin Panel -->
   <div class="admin-panel" id="admin-panel">
     <div class="admin-section-label">密碼</div>
     <div class="admin-row">
@@ -100,16 +82,14 @@
     <div class="status-msg" id="admin-status"></div>
   </div>
 
-  <!-- GW Bar -->
   <div class="gw-bar" id="gw-bar" style="display:none">
     <span class="gw-bar-label">睇指定周：</span>
     <select class="gw-select" id="gw-select" onchange="onGWSelect()">
       <option value="">-- 揀 GW --</option>
     </select>
-    <button class="view-all-btn inactive" id="back-to-summary" onclick="showSummary()" style="display:none">← 返回總覽</button>
+    <button class="back-btn" id="back-btn" onclick="showSummary()" style="display:none">← 返回總覽</button>
   </div>
 
-  <!-- Summary View -->
   <div id="summary-view">
     <div class="grid">
       <div class="card">
@@ -123,11 +103,12 @@
     </div>
   </div>
 
-  <!-- Weekly Detail View -->
   <div id="weekly-view" style="display:none">
     <div class="card">
       <div class="card-title" id="weekly-title">GW 詳情</div>
-      <div id="weekly-table"><div class="loading">載入中...</div></div>
+      <div class="overflow-x">
+        <div id="weekly-table"><div class="loading">載入中...</div></div>
+      </div>
     </div>
   </div>
 
@@ -206,7 +187,6 @@ function renderSummaryTable() {
   if (!data.some(d => d.pts > 0)) {
     document.getElementById('summary-table').innerHTML = '<div class="loading">未有數據</div>'; return;
   }
-
   let html = '<table><tr><th>#</th><th>玩家</th><th>累積罰款</th><th>累積總分</th></tr>';
   data.forEach((p, i) => {
     html += `<tr>
@@ -233,7 +213,6 @@ function renderCaptainTable() {
   if (!data.some(d => d.total > 0)) {
     document.getElementById('captain-table').innerHTML = '<div class="loading">未有數據</div>'; return;
   }
-
   let html = '<table><tr><th>#</th><th>玩家</th><th>Cap 總分</th><th>成功率</th></tr>';
   data.forEach((p, i) => {
     html += `<tr>
@@ -256,7 +235,7 @@ function onGWSelect() {
 function showWeekly(gw) {
   document.getElementById('summary-view').style.display = 'none';
   document.getElementById('weekly-view').style.display = 'block';
-  document.getElementById('back-to-summary').style.display = 'inline-block';
+  document.getElementById('back-btn').style.display = 'inline-block';
   document.getElementById('weekly-title').textContent = `GW${gw} 詳情`;
 
   const data = allResults.filter(r => r.gw === gw).sort((a,b) => b.gross_points - a.gross_points);
@@ -264,7 +243,8 @@ function showWeekly(gw) {
   if (!data.length) { document.getElementById('weekly-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
 
   const minPts = Math.min(...data.map(r => r.gross_points));
-  let html = '<table><tr><th>玩家</th><th>今周分</th><th>今周罰款</th><th>累積罰款</th><th>隊長</th><th>Chip</th></tr>';
+  let html = '<table><tr><th>玩家</th><th>今周分</th><th>今周罰款</th><th>累積罰款</th><th>累積總分</th><th>隊長</th><th>Cap分</th><th>成功率</th><th>Chip</th></tr>';
+
   data.forEach(r => {
     const cap = caps.find(c => c.entry_id === r.entry_id);
     const isLast = r.gross_points === minPts;
@@ -273,12 +253,21 @@ function showWeekly(gw) {
     const capName = cap ? cap.captain.replace(' (VC)', '') : '-';
     const isVC = cap && cap.captain.includes('(VC)');
     const chip = cap ? (CHIP_DISPLAY[cap.chip] || '') : '';
+    const capPts = cap ? cap.captain_pts : '-';
+    const allCapsForPlayer = allCapLog.filter(c => c.player_name === r.player_name && c.gw <= gw);
+    const ok = allCapsForPlayer.filter(c => c.cap_ok === 1).length;
+    const total = allCapsForPlayer.length;
+    const rate = total > 0 ? (ok/total*100).toFixed(0) + '%' : '-';
+
     html += `<tr class="${rowClass}">
       <td><strong>${r.player_name}</strong></td>
       <td>${r.gross_points}</td>
       <td class="${r.total_penalty < 0 ? 'penalty' : 'green'}">${r.total_penalty === 0 ? '$0' : `-$${Math.abs(r.total_penalty)}`}</td>
       <td class="${r.cumul_penalty < 0 ? 'penalty' : 'green'}">-$${Math.abs(r.cumul_penalty)}</td>
+      <td>${r.cumul_net_points}</td>
       <td>${capName}${isVC ? '<span class="vc-badge">(VC)</span>' : ''}</td>
+      <td>${capPts}</td>
+      <td>${rate}</td>
       <td>${chip}</td>
     </tr>`;
   });
@@ -289,13 +278,13 @@ function showWeekly(gw) {
 function showSummary() {
   document.getElementById('summary-view').style.display = 'block';
   document.getElementById('weekly-view').style.display = 'none';
-  document.getElementById('back-to-summary').style.display = 'none';
+  document.getElementById('back-btn').style.display = 'none';
   document.getElementById('gw-select').value = '';
 }
 
 function toggleAdmin() {
   const panel = document.getElementById('admin-panel');
-  panel.style.display = panel.style.display === 'none' || panel.style.display === '' ? 'block' : 'none';
+  panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
 }
 
 function checkPwd() {
