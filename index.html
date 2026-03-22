@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚽️ FPL 罰款計數機</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0d1117; color: #e6edf3; font-family: -apple-system, sans-serif; min-height: 100vh; }
+  .header { background: #161b22; border-bottom: 1px solid #30363d; padding: 20px; text-align: center; }
+  .header h1 { font-size: 24px; color: #58a6ff; }
+  .header p { color: #8b949e; margin-top: 4px; font-size: 14px; }
+  .gw-selector { display: flex; justify-content: center; gap: 12px; padding: 20px; flex-wrap: wrap; }
+  .gw-btn { background: #21262d; border: 1px solid #30363d; color: #e6edf3; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+  .gw-btn:hover { background: #30363d; }
+  .gw-btn.active { background: #1f6feb; border-color: #1f6feb; }
+  .container { max-width: 900px; margin: 0 auto; padding: 0 20px 40px; }
+  .section-title { font-size: 18px; font-weight: 600; margin: 24px 0 12px; color: #58a6ff; }
+  table { width: 100%; border-collapse: collapse; background: #161b22; border-radius: 8px; overflow: hidden; }
+  th { background: #1c2128; padding: 12px 16px; text-align: left; font-size: 13px; color: #8b949e; font-weight: 500; }
+  td { padding: 12px 16px; border-top: 1px solid #21262d; font-size: 14px; }
+  tr:hover td { background: #1c2128; }
+  .penalty { color: #f85149; font-weight: 600; }
+  .zero { color: #3fb950; }
+  .last-place { background: #3d1a1a !important; }
+  .low-score { background: #3d3a1a !important; }
+  .chip { font-size: 12px; margin-left: 4px; }
+  .vc { color: #f0883e; font-size: 12px; }
+  .tabs { display: flex; gap: 8px; margin: 20px 0 0; border-bottom: 1px solid #30363d; }
+  .tab { padding: 10px 20px; cursor: pointer; color: #8b949e; border-bottom: 2px solid transparent; font-size: 14px; }
+  .tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+  .loading { text-align: center; padding: 60px; color: #8b949e; }
+  .admin-section { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin: 20px 0; }
+  .admin-btn { background: #238636; border: 1px solid #2ea043; color: #fff; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; margin-right: 8px; }
+  .admin-btn:hover { background: #2ea043; }
+  .admin-btn:disabled { background: #21262d; border-color: #30363d; color: #8b949e; cursor: not-allowed; }
+  .status { margin-top: 12px; font-size: 13px; color: #8b949e; }
+  .status.success { color: #3fb950; }
+  .status.error { color: #f85149; }
+  .summary-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .player-name { font-weight: 600; font-size: 15px; }
+  .penalty-big { font-size: 22px; font-weight: 700; color: #f85149; }
+  .penalty-big.zero { color: #3fb950; }
+  .stats { display: flex; gap: 20px; color: #8b949e; font-size: 13px; }
+  .stat-val { color: #e6edf3; font-weight: 500; }
+  input[type="password"] { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 8px 12px; border-radius: 6px; font-size: 14px; width: 200px; }
+  .rank { color: #8b949e; font-size: 13px; width: 30px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚽️ FPL 罰款計數機</h1>
+  <p id="last-updated">載入中...</p>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('weekly')">每周結果</div>
+    <div class="tab" onclick="switchTab('summary')">全季總覽</div>
+    <div class="tab" onclick="switchTab('captain')">隊長排行</div>
+    <div class="tab" onclick="switchTab('admin')">🔧 更新數據</div>
+  </div>
+
+  <!-- 每周結果 -->
+  <div id="tab-weekly">
+    <div class="gw-selector" id="gw-buttons"></div>
+    <div id="weekly-content"><div class="loading">載入中...</div></div>
+  </div>
+
+  <!-- 全季總覽 -->
+  <div id="tab-summary" style="display:none">
+    <div class="section-title">全季罰款排行</div>
+    <div id="summary-content"><div class="loading">載入中...</div></div>
+  </div>
+
+  <!-- 隊長排行 -->
+  <div id="tab-captain" style="display:none">
+    <div class="section-title">隊長數據</div>
+    <div id="captain-content"><div class="loading">載入中...</div></div>
+  </div>
+
+  <!-- Admin -->
+  <div id="tab-admin" style="display:none">
+    <div class="admin-section">
+      <div class="section-title">🔧 更新數據</div>
+      <p style="color:#8b949e;font-size:13px;margin-bottom:16px">輸入密碼後可以更新指定 GW 數據</p>
+      <div style="margin-bottom:12px">
+        <input type="password" id="admin-password" placeholder="輸入密碼">
+      </div>
+      <div style="margin-bottom:12px">
+        <input type="number" id="gw-input" placeholder="GW (1-38)" min="1" max="38" style="background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:8px 12px;border-radius:6px;font-size:14px;width:120px">
+      </div>
+      <button class="admin-btn" onclick="updateGW()" id="update-btn">⚡️ 更新指定 GW</button>
+      <button class="admin-btn" onclick="updateLatest()" id="latest-btn">🔄 更新最新 GW</button>
+      <div class="status" id="admin-status"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://ucwsinzfpvjzdeqncjqc.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjd3NpbnpmcHZqemRlcW5janFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNzAzODUsImV4cCI6MjA4OTc0NjM4NX0.CncnodPpTasZlOaw4ueZDyM4lSdxkOe51PkJ1DtHOZY';
+const ADMIN_PASSWORD = 'fpl2024';
+
+const PLAYER_MAP = {
+  "lai's_dream": 3818341,
+  "Legend Son": 879948,
+  "叒cap撚錯人": 10037,
+  "達蛇的最後探戈": 901186,
+  "和波照YEAH！": 1394163,
+  "Arne slot lalalalala": 3775889,
+  "利記海鮮": 5281742,
+  "來都來了": 6297083
+};
+const LEAGUE_ID = 1406714;
+const CHIP_TC_KEYS = ['triple_captain', '3xc'];
+const CHIP_DISPLAY = {
+  'triple_captain': '👑 TC', '3xc': '👑 TC',
+  'bboost': '🚀 BB', 'wildcard': '🔄 WC', 'freehit': '🆓 FH'
+};
+
+let currentTab = 'weekly';
+let currentGW = null;
+let allResults = [];
+let allCapLog = [];
+
+async function supabase(table, query = '') {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+  });
+  return res.json();
+}
+
+async function supabaseUpsert(table, data) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates'
+    },
+    body: JSON.stringify(data)
+  });
+  return res.ok;
+}
+
+async function fetchFPL(path) {
+  const res = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://fantasy.premierleague.com/api/' + path)}`);
+  return res.json();
+}
+
+async function loadData() {
+  allResults = await supabase('weekly_results', '?order=gw.asc');
+  allCapLog = await supabase('cap_log', '?order=gw.asc');
+
+  const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
+  if (gws.length > 0) {
+    currentGW = gws[gws.length - 1];
+    renderGWButtons(gws);
+    renderWeekly(currentGW);
+    renderSummary();
+    renderCaptain();
+    const latest = allResults.reduce((a,b) => a.updated_at > b.updated_at ? a : b, allResults[0]);
+    document.getElementById('last-updated').textContent = `最後更新：${new Date(latest.updated_at).toLocaleString('zh-HK')}`;
+  } else {
+    document.getElementById('weekly-content').innerHTML = '<div class="loading">未有數據，請在管理頁面更新</div>';
+    document.getElementById('last-updated').textContent = '未有數據';
+  }
+}
+
+function renderGWButtons(gws) {
+  const container = document.getElementById('gw-buttons');
+  container.innerHTML = gws.map(gw =>
+    `<button class="gw-btn ${gw === currentGW ? 'active' : ''}" onclick="selectGW(${gw})">GW${gw}</button>`
+  ).join('');
+}
+
+function selectGW(gw) {
+  currentGW = gw;
+  document.querySelectorAll('.gw-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.textContent.replace('GW','')) === gw);
+  });
+  renderWeekly(gw);
+}
+
+function renderWeekly(gw) {
+  const data = allResults.filter(r => r.gw === gw).sort((a,b) => b.gross_points - a.gross_points);
+  const capData = allCapLog.filter(r => r.gw === gw);
+  if (!data.length) { document.getElementById('weekly-content').innerHTML = '<div class="loading">未有數據</div>'; return; }
+
+  const minPts = Math.min(...data.map(r => r.gross_points));
+
+  let html = `<table>
+    <tr>
+      <th>玩家</th><th>今周分</th><th>罰款</th><th>$$$$</th><th>隊長</th><th>Chip</th>
+    </tr>`;
+
+  data.forEach(r => {
+    const cap = capData.find(c => c.entry_id === r.entry_id);
+    const isLast = r.gross_points === minPts;
+    const isLow = r.gross_points < 45;
+    const rowClass = isLast ? 'last-place' : (isLow ? 'low-score' : '');
+    const penaltyClass = r.total_penalty < 0 ? 'penalty' : 'zero';
+    const penaltyStr = r.total_penalty === 0 ? '$0' : `-$${Math.abs(r.total_penalty)}`;
+    const capName = cap ? cap.captain.replace(' (VC)', '') : '-';
+    const isVC = cap && cap.captain.includes('(VC)');
+    const chipStr = cap ? (CHIP_DISPLAY[cap.chip] || '') : '';
+
+    html += `<tr class="${rowClass}">
+      <td><strong>${r.player_name}</strong></td>
+      <td>${r.gross_points}</td>
+      <td class="${penaltyClass}">${penaltyStr}</td>
+      <td class="${r.cumul_penalty < 0 ? 'penalty' : 'zero'}">-$${Math.abs(r.cumul_penalty)}</td>
+      <td>${capName}${isVC ? ' <span class="vc">(VC)</span>' : ''}</td>
+      <td>${chipStr}</td>
+    </tr>`;
+  });
+  html += '</table>';
+  document.getElementById('weekly-content').innerHTML = html;
+}
+
+function renderSummary() {
+  const players = Object.keys(PLAYER_MAP);
+  const summaryData = players.map(name => {
+    const results = allResults.filter(r => r.player_name === name);
+    const latestResult = results.sort((a,b) => b.gw - a.gw)[0];
+    const totalPenalty = latestResult ? latestResult.cumul_penalty : 0;
+    const totalPts = latestResult ? latestResult.cumul_net_points : 0;
+    return { name, totalPenalty, totalPts };
+  }).sort((a,b) => b.totalPenalty - a.totalPenalty);
+
+  let html = '';
+  summaryData.forEach((p, i) => {
+    const penClass = p.totalPenalty < 0 ? '' : 'zero';
+    html += `<div class="summary-card">
+      <div>
+        <div class="player-name">${i+1}. ${p.name}</div>
+        <div class="stats">
+          <span>總分 <span class="stat-val">${p.totalPts}</span></span>
+        </div>
+      </div>
+      <div class="penalty-big ${penClass}">-$${Math.abs(p.totalPenalty)}</div>
+    </div>`;
+  });
+  document.getElementById('summary-content').innerHTML = html;
+}
+
+function renderCaptain() {
+  const players = Object.keys(PLAYER_MAP);
+  const capData = players.map(name => {
+    const caps = allCapLog.filter(r => r.player_name === name);
+    const total = caps.length;
+    const ok = caps.filter(c => c.cap_ok === 1).length;
+    const totalPts = caps.reduce((s,c) => s + (c.captain_pts || 0), 0);
+    const rate = total > 0 ? (ok/total*100).toFixed(1) : '0.0';
+    return { name, total, ok, totalPts, rate };
+  }).sort((a,b) => b.totalPts - a.totalPts);
+
+  let html = `<table>
+    <tr><th>#</th><th>玩家</th><th>Cap 總得分</th><th>成功率</th><th>場數</th></tr>`;
+  capData.forEach((p, i) => {
+    html += `<tr>
+      <td class="rank">${i+1}</td>
+      <td>${p.name}</td>
+      <td><strong>${p.totalPts}</strong></td>
+      <td>${p.rate}%</td>
+      <td>${p.ok}/${p.total}</td>
+    </tr>`;
+  });
+  html += '</table>';
+  document.getElementById('captain-content').innerHTML = html;
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['weekly','summary','captain','admin'][i] === tab);
+  });
+  ['weekly','summary','captain','admin'].forEach(t => {
+    document.getElementById(`tab-${t}`).style.display = t === tab ? 'block' : 'none';
+  });
+}
+
+async function updateGW() {
+  const pwd = document.getElementById('admin-password').value;
+  if (pwd !== ADMIN_PASSWORD) { setStatus('❌ 密碼錯誤', 'error'); return; }
+  const gw = parseInt(document.getElementById('gw-input').value);
+  if (!gw || gw < 1 || gw > 38) { setStatus('❌ 請輸入有效 GW', 'error'); return; }
+  await runUpdate(gw);
+}
+
+async function updateLatest() {
+  const pwd = document.getElementById('admin-password').value;
+  if (pwd !== ADMIN_PASSWORD) { setStatus('❌ 密碼錯誤', 'error'); return; }
+  setStatus('🔄 拎緊當前 GW...', '');
+  try {
+    const boot = await fetchFPL('bootstrap-static/');
+    let gw = 0;
+    boot.events.forEach(e => { if (e.is_current) gw = e.id; });
+    if (!gw) boot.events.forEach(e => { if (e.finished && e.id > gw) gw = e.id; });
+    if (!gw) { setStatus('❌ 搵唔到當前 GW', 'error'); return; }
+    await runUpdate(gw);
+  } catch(e) { setStatus('❌ 出錯：' + e.message, 'error'); }
+}
+
+async function runUpdate(gw) {
+  document.getElementById('update-btn').disabled = true;
+  document.getElementById('latest-btn').disabled = true;
+  setStatus(`⏳ 更新 GW${gw} 中...`, '');
+
+  try {
+    const [h2hRes, bootRes, liveRes, fixtureRes] = await Promise.all([
+      fetchFPL(`leagues-h2h-matches/league/${LEAGUE_ID}/?event=${gw}`),
+      fetchFPL('bootstrap-static/'),
+      fetchFPL(`event/${gw}/live/`),
+      fetchFPL(`fixtures/?event=${gw}`)
+    ]);
+
+    const netByEntry = {};
+    (h2hRes.results || []).forEach(m => {
+      netByEntry[m.entry_1_entry] = m.entry_1_points;
+      netByEntry[m.entry_2_entry] = m.entry_2_points;
+    });
+
+    const elementName = {};
+    const elementTeam = {};
+    (bootRes.elements || []).forEach(el => {
+      elementName[el.id] = el.web_name;
+      elementTeam[el.id] = el.team;
+    });
+
+    const liveData = {};
+    (liveRes.elements || []).forEach(e => {
+      liveData[e.id] = { points: e.stats.total_points || 0, minutes: e.stats.minutes || 0 };
+    });
+
+    const now = new Date();
+    const teamStatus = {};
+    (fixtureRes || []).forEach(f => {
+      if (!f.kickoff_time) return;
+      const kickoff = new Date(f.kickoff_time);
+      const mins = (now - kickoff) / 60000;
+      const status = { kickedOff: mins >= 20, finished: f.finished || false };
+      teamStatus[f.team_h] = status;
+      teamStatus[f.team_a] = status;
+    });
+
+    const players = Object.keys(PLAYER_MAP);
+    const picksData = await Promise.all(players.map(async name => {
+      const entryId = PLAYER_MAP[name];
+      try {
+        const res = await fetchFPL(`entry/${entryId}/event/${gw}/picks/`);
+        return { name, entryId, data: res };
+      } catch(e) { return { name, entryId, data: null }; }
+    }));
+
+    const grossByEntry = {};
+    const capElByEntry = {};
+    const vcElByEntry = {};
+    const rawChipByEntry = {};
+
+    picksData.forEach(({ name, entryId, data }) => {
+      if (!data || !data.entry_history) return;
+      const cost = data.entry_history.event_transfers_cost || 0;
+      const net = netByEntry[entryId];
+      if (typeof net === 'number') grossByEntry[entryId] = net + cost;
+      const cap = (data.picks || []).find(p => p.is_captain);
+      const vc = (data.picks || []).find(p => p.is_vice_captain);
+      if (cap) capElByEntry[entryId] = cap.element;
+      if (vc) vcElByEntry[entryId] = vc.element;
+      rawChipByEntry[entryId] = data.active_chip || '';
+    });
+
+    const grossArr = Object.values(grossByEntry);
+    const minGross = grossArr.length ? Math.min(...grossArr) : -1;
+
+    // 拎上周累積數據
+    const prevResults = await supabase('weekly_results', `?gw=eq.${gw-1}`);
+    const prevByEntry = {};
+    prevResults.forEach(r => { prevByEntry[r.entry_id] = r; });
+
+    const weeklyRows = [];
+    const capRows = [];
+
+    for (const { name, entryId } of picksData) {
+      const gross = grossByEntry[entryId];
+      const net = netByEntry[entryId];
+      if (typeof gross !== 'number' || typeof net !== 'number') continue;
+
+      const leaguePenalty = (gross < 45 ? -20 : 0) + (gross === minGross ? -20 : 0);
+      const h2hPenalty = calcH2H(h2hRes.results || [], entryId);
+      const totalPenalty = leaguePenalty + h2hPenalty;
+      const prev = prevByEntry[entryId];
+      const cumulPenalty = (prev ? prev.cumul_penalty : 0) + totalPenalty;
+      const cumulNet = (prev ? prev.cumul_net_points : 0) + net;
+
+      weeklyRows.push({
+        gw, player_name: name, entry_id: entryId,
+        gross_points: gross, net_points: net,
+        league_penalty: leaguePenalty, h2h_penalty: h2hPenalty,
+        total_penalty: totalPenalty, cumul_penalty: cumulPenalty,
+        cumul_net_points: cumulNet, updated_at: new Date().toISOString()
+      });
+
+      const capEl = capElByEntry[entryId];
+      const vcEl = vcElByEntry[entryId];
+      const rawChip = rawChipByEntry[entryId] || '';
+      if (capEl) {
+        const isTC = CHIP_TC_KEYS.includes(rawChip);
+        let effectiveEl = capEl;
+        let usedVC = false;
+        if (!isTC) {
+          const capMins = (liveData[capEl] && liveData[capEl].minutes) || 0;
+          const capTeam = elementTeam[capEl];
+          const capStatus = teamStatus[capTeam] || { kickedOff: false };
+          if (capMins === 0 && capStatus.kickedOff && vcEl) {
+            effectiveEl = vcEl;
+            usedVC = true;
+          }
+        }
+        const multiplier = isTC ? 3 : 2;
+        const rawPts = (liveData[effectiveEl] && liveData[effectiveEl].points) || 0;
+        const capPts = rawPts * multiplier;
+        const capOK = rawPts >= 4 ? 1 : 0;
+        const capName = elementName[effectiveEl] + (usedVC ? ' (VC)' : '');
+        capRows.push({
+          gw, player_name: name, entry_id: entryId,
+          captain: capName, captain_pts: capPts, cap_ok: capOK,
+          chip: rawChip, updated_at: new Date().toISOString()
+        });
+      }
+    }
+
+    await supabaseUpsert('weekly_results', weeklyRows);
+    await supabaseUpsert('cap_log', capRows);
+
+    setStatus(`✅ GW${gw} 更新完成！`, 'success');
+    await loadData();
+
+  } catch(e) {
+    setStatus('❌ 出錯：' + e.message, 'error');
+  }
+
+  document.getElementById('update-btn').disabled = false;
+  document.getElementById('latest-btn').disabled = false;
+}
+
+function calcH2H(matches, entryId) {
+  for (const m of matches) {
+    if (m.entry_1_entry === entryId) return m.entry_1_points < m.entry_2_points ? -20 : 0;
+    if (m.entry_2_entry === entryId) return m.entry_2_points < m.entry_1_points ? -20 : 0;
+  }
+  return 0;
+}
+
+function setStatus(msg, type) {
+  const el = document.getElementById('admin-status');
+  el.textContent = msg;
+  el.className = 'status ' + type;
+}
+
+loadData();
+</script>
+</body>
+</html>
