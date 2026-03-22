@@ -31,7 +31,7 @@
   .tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
   .loading { text-align: center; padding: 60px; color: #8b949e; }
   .admin-section { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin: 20px 0; }
-  .admin-btn { background: #238636; border: 1px solid #2ea043; color: #fff; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; margin-right: 8px; }
+  .admin-btn { background: #238636; border: 1px solid #2ea043; color: #fff; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; margin-right: 8px; margin-top: 8px; }
   .admin-btn:hover { background: #2ea043; }
   .admin-btn:disabled { background: #21262d; border-color: #30363d; color: #8b949e; cursor: not-allowed; }
   .status { margin-top: 12px; font-size: 13px; color: #8b949e; }
@@ -43,8 +43,10 @@
   .penalty-big.zero { color: #3fb950; }
   .stats { display: flex; gap: 20px; color: #8b949e; font-size: 13px; }
   .stat-val { color: #e6edf3; font-weight: 500; }
-  input[type="password"] { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 8px 12px; border-radius: 6px; font-size: 14px; width: 200px; }
+  input[type="password"], input[type="number"] { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 8px 12px; border-radius: 6px; font-size: 14px; }
   .rank { color: #8b949e; font-size: 13px; width: 30px; }
+  .divider { border-top: 1px solid #30363d; margin: 20px 0; }
+  .batch-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -84,15 +86,31 @@
   <div id="tab-admin" style="display:none">
     <div class="admin-section">
       <div class="section-title">🔧 更新數據</div>
-      <p style="color:#8b949e;font-size:13px;margin-bottom:16px">輸入密碼後可以更新指定 GW 數據</p>
+      <p style="color:#8b949e;font-size:13px;margin-bottom:16px">輸入密碼後可以更新數據</p>
+
       <div style="margin-bottom:12px">
-        <input type="password" id="admin-password" placeholder="輸入密碼">
+        <input type="password" id="admin-password" placeholder="輸入密碼" style="width:200px">
       </div>
-      <div style="margin-bottom:12px">
-        <input type="number" id="gw-input" placeholder="GW (1-38)" min="1" max="38" style="background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:8px 12px;border-radius:6px;font-size:14px;width:120px">
+
+      <!-- 單周更新 -->
+      <div style="margin-bottom:8px;color:#8b949e;font-size:13px">單周更新</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input type="number" id="gw-input" placeholder="GW (1-38)" min="1" max="38" style="width:120px">
+        <button class="admin-btn" onclick="updateGW()" id="update-btn">⚡️ 更新指定 GW</button>
+        <button class="admin-btn" onclick="updateLatest()" id="latest-btn">🔄 更新最新 GW</button>
       </div>
-      <button class="admin-btn" onclick="updateGW()" id="update-btn">⚡️ 更新指定 GW</button>
-      <button class="admin-btn" onclick="updateLatest()" id="latest-btn">🔄 更新最新 GW</button>
+
+      <div class="divider"></div>
+
+      <!-- 批量更新 -->
+      <div style="margin-bottom:8px;color:#8b949e;font-size:13px">批量補跑（每次最多 8 個 GW）</div>
+      <div class="batch-row">
+        <input type="number" id="batch-from" placeholder="由 GW" min="1" max="38" style="width:90px">
+        <span style="color:#8b949e">至</span>
+        <input type="number" id="batch-to" placeholder="至 GW" min="1" max="38" style="width:90px">
+        <button class="admin-btn" onclick="batchUpdate()" id="batch-btn">📦 批量補跑</button>
+      </div>
+
       <div class="status" id="admin-status"></div>
     </div>
   </div>
@@ -120,12 +138,11 @@ const CHIP_DISPLAY = {
   'bboost': '🚀 BB', 'wildcard': '🔄 WC', 'freehit': '🆓 FH'
 };
 
-let currentTab = 'weekly';
 let currentGW = null;
 let allResults = [];
 let allCapLog = [];
 
-async function supabase(table, query = '') {
+async function supabaseGet(table, query = '') {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
   });
@@ -152,8 +169,11 @@ async function fetchFPL(path) {
 }
 
 async function loadData() {
-  allResults = await supabase('weekly_results', '?order=gw.asc');
-  allCapLog = await supabase('cap_log', '?order=gw.asc');
+  allResults = await supabaseGet('weekly_results', '?order=gw.asc');
+  allCapLog = await supabaseGet('cap_log', '?order=gw.asc');
+
+  if (!Array.isArray(allResults)) allResults = [];
+  if (!Array.isArray(allCapLog)) allCapLog = [];
 
   const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
   if (gws.length > 0) {
@@ -193,17 +213,15 @@ function renderWeekly(gw) {
   const minPts = Math.min(...data.map(r => r.gross_points));
 
   let html = `<table>
-    <tr>
-      <th>玩家</th><th>今周分</th><th>罰款</th><th>$$$$</th><th>隊長</th><th>Chip</th>
-    </tr>`;
+    <tr><th>玩家</th><th>今周分</th><th>今周罰款</th><th>累積罰款</th><th>隊長</th><th>Chip</th></tr>`;
 
   data.forEach(r => {
     const cap = capData.find(c => c.entry_id === r.entry_id);
     const isLast = r.gross_points === minPts;
     const isLow = r.gross_points < 45;
     const rowClass = isLast ? 'last-place' : (isLow ? 'low-score' : '');
-    const penaltyClass = r.total_penalty < 0 ? 'penalty' : 'zero';
     const penaltyStr = r.total_penalty === 0 ? '$0' : `-$${Math.abs(r.total_penalty)}`;
+    const cumulStr = `-$${Math.abs(r.cumul_penalty)}`;
     const capName = cap ? cap.captain.replace(' (VC)', '') : '-';
     const isVC = cap && cap.captain.includes('(VC)');
     const chipStr = cap ? (CHIP_DISPLAY[cap.chip] || '') : '';
@@ -211,8 +229,8 @@ function renderWeekly(gw) {
     html += `<tr class="${rowClass}">
       <td><strong>${r.player_name}</strong></td>
       <td>${r.gross_points}</td>
-      <td class="${penaltyClass}">${penaltyStr}</td>
-      <td class="${r.cumul_penalty < 0 ? 'penalty' : 'zero'}">-$${Math.abs(r.cumul_penalty)}</td>
+      <td class="${r.total_penalty < 0 ? 'penalty' : 'zero'}">${penaltyStr}</td>
+      <td class="${r.cumul_penalty < 0 ? 'penalty' : 'zero'}">${cumulStr}</td>
       <td>${capName}${isVC ? ' <span class="vc">(VC)</span>' : ''}</td>
       <td>${chipStr}</td>
     </tr>`;
@@ -224,24 +242,25 @@ function renderWeekly(gw) {
 function renderSummary() {
   const players = Object.keys(PLAYER_MAP);
   const summaryData = players.map(name => {
-    const results = allResults.filter(r => r.player_name === name);
-    const latestResult = results.sort((a,b) => b.gw - a.gw)[0];
-    const totalPenalty = latestResult ? latestResult.cumul_penalty : 0;
-    const totalPts = latestResult ? latestResult.cumul_net_points : 0;
-    return { name, totalPenalty, totalPts };
-  }).sort((a,b) => b.totalPenalty - a.totalPenalty);
+    const results = allResults.filter(r => r.player_name === name).sort((a,b) => b.gw - a.gw);
+    const latest = results[0];
+    return {
+      name,
+      totalPenalty: latest ? latest.cumul_penalty : 0,
+      totalPts: latest ? latest.cumul_net_points : 0
+    };
+  }).sort((a,b) => a.totalPenalty - b.totalPenalty);
 
   let html = '';
   summaryData.forEach((p, i) => {
-    const penClass = p.totalPenalty < 0 ? '' : 'zero';
     html += `<div class="summary-card">
       <div>
         <div class="player-name">${i+1}. ${p.name}</div>
-        <div class="stats">
+        <div class="stats" style="margin-top:4px">
           <span>總分 <span class="stat-val">${p.totalPts}</span></span>
         </div>
       </div>
-      <div class="penalty-big ${penClass}">-$${Math.abs(p.totalPenalty)}</div>
+      <div class="penalty-big ${p.totalPenalty >= 0 ? 'zero' : ''}">-$${Math.abs(p.totalPenalty)}</div>
     </div>`;
   });
   document.getElementById('summary-content').innerHTML = html;
@@ -259,7 +278,7 @@ function renderCaptain() {
   }).sort((a,b) => b.totalPts - a.totalPts);
 
   let html = `<table>
-    <tr><th>#</th><th>玩家</th><th>Cap 總得分</th><th>成功率</th><th>場數</th></tr>`;
+    <tr><th>#</th><th>玩家</th><th>Cap 總得分</th><th>成功率</th><th>成功/總場</th></tr>`;
   capData.forEach((p, i) => {
     html += `<tr>
       <td class="rank">${i+1}</td>
@@ -274,42 +293,69 @@ function renderCaptain() {
 }
 
 function switchTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll('.tab').forEach((t,i) => {
-    t.classList.toggle('active', ['weekly','summary','captain','admin'][i] === tab);
-  });
-  ['weekly','summary','captain','admin'].forEach(t => {
-    document.getElementById(`tab-${t}`).style.display = t === tab ? 'block' : 'none';
-  });
+  const tabs = ['weekly','summary','captain','admin'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i] === tab));
+  tabs.forEach(t => { document.getElementById(`tab-${t}`).style.display = t === tab ? 'block' : 'none'; });
+}
+
+function checkPassword() {
+  const pwd = document.getElementById('admin-password').value;
+  if (pwd !== ADMIN_PASSWORD) { setStatus('❌ 密碼錯誤', 'error'); return false; }
+  return true;
 }
 
 async function updateGW() {
-  const pwd = document.getElementById('admin-password').value;
-  if (pwd !== ADMIN_PASSWORD) { setStatus('❌ 密碼錯誤', 'error'); return; }
+  if (!checkPassword()) return;
   const gw = parseInt(document.getElementById('gw-input').value);
   if (!gw || gw < 1 || gw > 38) { setStatus('❌ 請輸入有效 GW', 'error'); return; }
+  setAllBtnsDisabled(true);
   await runUpdate(gw);
+  setAllBtnsDisabled(false);
 }
 
 async function updateLatest() {
-  const pwd = document.getElementById('admin-password').value;
-  if (pwd !== ADMIN_PASSWORD) { setStatus('❌ 密碼錯誤', 'error'); return; }
+  if (!checkPassword()) return;
   setStatus('🔄 拎緊當前 GW...', '');
+  setAllBtnsDisabled(true);
   try {
     const boot = await fetchFPL('bootstrap-static/');
     let gw = 0;
     boot.events.forEach(e => { if (e.is_current) gw = e.id; });
     if (!gw) boot.events.forEach(e => { if (e.finished && e.id > gw) gw = e.id; });
-    if (!gw) { setStatus('❌ 搵唔到當前 GW', 'error'); return; }
+    if (!gw) { setStatus('❌ 搵唔到當前 GW', 'error'); setAllBtnsDisabled(false); return; }
     await runUpdate(gw);
   } catch(e) { setStatus('❌ 出錯：' + e.message, 'error'); }
+  setAllBtnsDisabled(false);
+}
+
+async function batchUpdate() {
+  if (!checkPassword()) return;
+  const fromGW = parseInt(document.getElementById('batch-from').value);
+  const toGW = parseInt(document.getElementById('batch-to').value);
+  if (!fromGW || !toGW || isNaN(fromGW) || isNaN(toGW)) { setStatus('❌ 請輸入起始同結束 GW', 'error'); return; }
+  if (fromGW > toGW) { setStatus('❌ 起始 GW 唔可以大過結束 GW', 'error'); return; }
+  if (toGW - fromGW >= 8) { setStatus('❌ 每次最多 8 個 GW，請分批跑', 'error'); return; }
+  setAllBtnsDisabled(true);
+  for (let gw = fromGW; gw <= toGW; gw++) {
+    setStatus(`⏳ 更新 GW${gw} 中...（${gw - fromGW + 1}/${toGW - fromGW + 1}）`, '');
+    try {
+      await runUpdate(gw);
+    } catch(e) {
+      setStatus(`❌ GW${gw} 出錯：${e.message}`, 'error');
+    }
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  setStatus(`✅ GW${fromGW}–${toGW} 批量完成！`, 'success');
+  setAllBtnsDisabled(false);
+}
+
+function setAllBtnsDisabled(disabled) {
+  ['update-btn','latest-btn','batch-btn'].forEach(id => {
+    document.getElementById(id).disabled = disabled;
+  });
 }
 
 async function runUpdate(gw) {
-  document.getElementById('update-btn').disabled = true;
-  document.getElementById('latest-btn').disabled = true;
-  setStatus(`⏳ 更新 GW${gw} 中...`, '');
-
   try {
     const [h2hRes, bootRes, liveRes, fixtureRes] = await Promise.all([
       fetchFPL(`leagues-h2h-matches/league/${LEAGUE_ID}/?event=${gw}`),
@@ -333,7 +379,10 @@ async function runUpdate(gw) {
 
     const liveData = {};
     (liveRes.elements || []).forEach(e => {
-      liveData[e.id] = { points: e.stats.total_points || 0, minutes: e.stats.minutes || 0 };
+      liveData[e.id] = {
+        points: (e.stats && e.stats.total_points) || 0,
+        minutes: (e.stats && e.stats.minutes) || 0
+      };
     });
 
     const now = new Date();
@@ -373,13 +422,12 @@ async function runUpdate(gw) {
       rawChipByEntry[entryId] = data.active_chip || '';
     });
 
-    const grossArr = Object.values(grossByEntry);
+    const grossArr = Object.values(grossByEntry).filter(v => typeof v === 'number');
     const minGross = grossArr.length ? Math.min(...grossArr) : -1;
 
-    // 拎上周累積數據
-    const prevResults = await supabase('weekly_results', `?gw=eq.${gw-1}`);
+    const prevResults = await supabaseGet('weekly_results', `?gw=eq.${gw - 1}`);
     const prevByEntry = {};
-    prevResults.forEach(r => { prevByEntry[r.entry_id] = r; });
+    if (Array.isArray(prevResults)) prevResults.forEach(r => { prevByEntry[r.entry_id] = r; });
 
     const weeklyRows = [];
     const capRows = [];
@@ -424,7 +472,7 @@ async function runUpdate(gw) {
         const rawPts = (liveData[effectiveEl] && liveData[effectiveEl].points) || 0;
         const capPts = rawPts * multiplier;
         const capOK = rawPts >= 4 ? 1 : 0;
-        const capName = elementName[effectiveEl] + (usedVC ? ' (VC)' : '');
+        const capName = (elementName[effectiveEl] || ('id:' + effectiveEl)) + (usedVC ? ' (VC)' : '');
         capRows.push({
           gw, player_name: name, entry_id: entryId,
           captain: capName, captain_pts: capPts, cap_ok: capOK,
@@ -435,16 +483,11 @@ async function runUpdate(gw) {
 
     await supabaseUpsert('weekly_results', weeklyRows);
     await supabaseUpsert('cap_log', capRows);
-
-    setStatus(`✅ GW${gw} 更新完成！`, 'success');
     await loadData();
 
   } catch(e) {
-    setStatus('❌ 出錯：' + e.message, 'error');
+    throw e;
   }
-
-  document.getElementById('update-btn').disabled = false;
-  document.getElementById('latest-btn').disabled = false;
 }
 
 function calcH2H(matches, entryId) {
