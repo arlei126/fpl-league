@@ -170,7 +170,7 @@ async function supabaseUpsert(table, data) {
 }
 
 async function fetchFPL(path) {
-  const url = 'https://fantasy.premierleague.com/api/' + path;
+  const url = 'https://fantasy.premierleague.com/api/' + path + (path.includes('?') ? '&' : '?') + '_=' + Date.now();
   const proxies = [
     `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
     `https://corsproxy.io/?${encodeURIComponent(url)}`,
