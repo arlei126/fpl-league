@@ -170,8 +170,19 @@ async function supabaseUpsert(table, data) {
 }
 
 async function fetchFPL(path) {
-  const res = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://fantasy.premierleague.com/api/' + path)}`);
-  return res.json();
+  const url = 'https://fantasy.premierleague.com/api/' + path;
+  const proxies = [
+    `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+  ];
+  for (const proxy of proxies) {
+    try {
+      const res = await fetch(proxy);
+      const text = await res.text();
+      return JSON.parse(text);
+    } catch(e) { continue; }
+  }
+  throw new Error('所有 proxy 都失敗');
 }
 
 async function loadData() {
