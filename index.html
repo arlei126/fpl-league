@@ -172,14 +172,17 @@ async function supabaseUpsert(table, data) {
 async function fetchFPL(path) {
   const url = 'https://fantasy.premierleague.com/api/' + path;
   const proxies = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
     `https://corsproxy.io/?${encodeURIComponent(url)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+    `https://thingproxy.freeboard.io/fetch/${url}`
   ];
   for (const proxy of proxies) {
     try {
-      const res = await fetch(proxy);
+      const res = await fetch(proxy, { cache: 'no-store' });
       const text = await res.text();
-      return JSON.parse(text);
+      if (text.startsWith('{') || text.startsWith('[')) {
+        return JSON.parse(text);
+      }
     } catch(e) { continue; }
   }
   throw new Error('所有 proxy 都失敗');
