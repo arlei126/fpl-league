@@ -166,7 +166,11 @@ async function supabaseUpsert(table, data) {
     },
     body: JSON.stringify(data)
   });
-  return res.ok;
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Supabase 寫入失敗：${err}`);
+  }
+  return true;
 }
 
 async function fetchFPL(path) {
