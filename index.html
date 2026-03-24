@@ -26,7 +26,7 @@
   .nav-tab { flex: 1; text-align: center; padding: 8px 4px; cursor: pointer; color: #8b949e; border-radius: 6px; font-size: 13px; transition: all 0.2s; }
   .nav-tab.active { background: #1f6feb; color: #fff; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } .nav-tab { font-size: 11px; padding: 6px 2px; } .desk-only { display: none !important; } th { padding: 6px 8px; font-size: 11px; } td { padding: 6px 8px; font-size: 12px; } table { width: 100%; min-width: auto; } }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } .nav-tab { font-size: 11px; padding: 6px 2px; } .desk-only { display: none !important; } th { padding: 5px 4px; font-size: 10px; } td { padding: 5px 4px; font-size: 11px; } table { width: 100%; min-width: auto; } td:first-child { position: static; border-right: none; } th:first-child { left: auto; border-right: none; } }
   .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
   .card-title { padding: 12px 16px; background: #1c2128; font-size: 14px; font-weight: 600; color: #58a6ff; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; }
   .worst-gw-badge { background: #f85149; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
@@ -59,15 +59,15 @@
   .squad-container { padding: 16px; border-top: 1px solid #30363d; }
   .squad-section-label { font-size: 11px; color: #8b949e; margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
   .squad-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-  .player-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; width: 76px; text-align: center; overflow: hidden; flex-shrink: 0; }
+  .player-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; width: 90px; text-align: center; overflow: hidden; flex-shrink: 0; }
   .player-card.is-captain { border-color: #ffd700; box-shadow: 0 0 6px rgba(255,215,0,0.3); }
   .player-card.is-vc-active { border-color: #c0c0c0; box-shadow: 0 0 6px rgba(192,192,192,0.3); }
   .player-card.is-bench { opacity: 0.55; }
-  .player-card-shirt { padding: 8px 0 4px; background: #1c2128; height: 52px; display: flex; align-items: center; justify-content: center; }
-  .player-card-shirt img { height: 40px; width: auto; object-fit: contain; }
-  .player-card-shirt-fallback { font-size: 26px; }
-  .player-card-name { font-size: 10px; font-weight: 600; padding: 4px 4px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .player-card-pts { font-size: 14px; font-weight: 700; padding: 2px 4px 4px; color: #3fb950; }
+  .player-card-shirt { padding: 8px 0 4px; background: #1c2128; height: 60px; display: flex; align-items: center; justify-content: center; }
+  .player-card-shirt img { height: 46px; width: auto; object-fit: contain; }
+  .player-card-shirt-fallback { font-size: 28px; }
+  .player-card-name { font-size: 10px; font-weight: 600; padding: 4px 3px 2px; white-space: normal; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; height: 28px; display: flex; align-items: center; justify-content: center; }
+  .player-card-pts { font-size: 15px; font-weight: 700; padding: 2px 4px 4px; color: #3fb950; }
   .player-card-pts.zero { color: #8b949e; }
   .player-card-pts.negative { color: #f85149; }
   .player-card-badge { font-size: 9px; padding: 2px 4px; background: #ffd700; color: #000; font-weight: 700; }
@@ -102,17 +102,17 @@
 
   /* ===== 手機版陣容卡片 ===== */
   @media (max-width: 700px) {
-    .squad-container { padding: 4px; width: calc(100vw - 16px); max-width: calc(100vw - 16px); overflow: hidden; }
+    .squad-container { padding: 4px; width: 100%; max-width: 100%; overflow: hidden; box-sizing: border-box; }
     .squad-section-label { font-size: 9px; margin-bottom: 3px; }
-    .squad-grid { gap: 2px; margin-bottom: 6px; display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); }
+    .squad-grid { gap: 2px; margin-bottom: 6px; display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); }
     .player-card { width: auto; border-radius: 3px; border-width: 1px; }
-    .player-card-shirt { padding: 2px 0 1px; height: 28px; }
-    .player-card-shirt img { height: 22px; }
-    .player-card-shirt-fallback { font-size: 14px; }
-    .player-card-name { font-size: 6.5px; padding: 1px 1px 0; }
-    .player-card-pts { font-size: 9px; padding: 0 1px 1px; }
-    .player-card-badge { font-size: 5.5px; padding: 1px 2px; }
-    .player-card-badge-spacer { height: 10px; }
+    .player-card-shirt { padding: 2px 0 1px; height: 26px; }
+    .player-card-shirt img { height: 20px; }
+    .player-card-shirt-fallback { font-size: 13px; }
+    .player-card-name { font-size: 6px; padding: 1px 1px 0; white-space: nowrap; height: auto; display: block; }
+    .player-card-pts { font-size: 8px; padding: 0 1px 1px; }
+    .player-card-badge { font-size: 5px; padding: 0 2px; }
+    .player-card-badge-spacer { height: 8px; }
   }
 </style>
 </head>
