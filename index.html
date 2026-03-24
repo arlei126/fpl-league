@@ -54,14 +54,10 @@
   .player-link:hover { color: #58a6ff; }
   .expand-icon { color: #8b949e; font-size: 11px; margin-left: 6px; transition: transform 0.2s; display: inline-block; }
   tr.data-row.expanded .expand-icon { transform: rotate(180deg); }
-
-  /* 陣容展開 */
   tr.squad-row td { padding: 0; border-top: none; background: #0d1117 !important; }
   tr.squad-row td:first-child { background: #0d1117 !important; border-right: none; position: static; }
   .squad-container { padding: 16px; border-top: 1px solid #30363d; }
   .squad-section-label { font-size: 11px; color: #8b949e; margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
-
-  /* 電腦：橫排 */
   .squad-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
   .player-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; width: 76px; text-align: center; overflow: hidden; flex-shrink: 0; }
   .player-card.is-captain { border-color: #ffd700; box-shadow: 0 0 6px rgba(255,215,0,0.3); }
@@ -76,31 +72,6 @@
   .player-card-pts.negative { color: #f85149; }
   .player-card-badge { font-size: 9px; padding: 2px 4px; background: #ffd700; color: #000; font-weight: 700; }
   .player-card-badge.vc-badge-card { background: #c0c0c0; }
-
-  /* 手機：直排按位置 */
-  @media (max-width: 700px) {
-    .squad-grid { display: none; }
-    .squad-mobile { display: block; margin-bottom: 12px; }
-    .squad-pos-group { margin-bottom: 12px; }
-    .squad-pos-label { font-size: 10px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-    .squad-pos-row { display: flex; gap: 6px; flex-wrap: wrap; }
-    .player-card-sm { background: #161b22; border: 1px solid #30363d; border-radius: 6px; display: flex; align-items: center; gap: 6px; padding: 5px 8px; flex: 0 0 auto; }
-    .player-card-sm.is-captain { border-color: #ffd700; }
-    .player-card-sm.is-vc { border-color: #c0c0c0; }
-    .player-card-sm.is-bench { opacity: 0.55; }
-    .player-card-sm-shirt { font-size: 18px; line-height: 1; }
-    .player-card-sm-shirt img { height: 22px; width: auto; object-fit: contain; }
-    .player-card-sm-name { font-size: 11px; font-weight: 600; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .player-card-sm-pts { font-size: 12px; font-weight: 700; color: #3fb950; margin-left: auto; }
-    .player-card-sm-pts.zero { color: #8b949e; }
-    .player-card-sm-pts.negative { color: #f85149; }
-    .player-card-sm-badge { font-size: 9px; background: #ffd700; color: #000; font-weight: 700; padding: 1px 4px; border-radius: 3px; }
-    .player-card-sm-badge.vc { background: #c0c0c0; }
-  }
-  @media (min-width: 701px) {
-    .squad-mobile { display: none; }
-  }
-
   .squad-loading { color: #8b949e; font-size: 13px; padding: 20px; text-align: center; }
   .admin-panel { display: none; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
   .admin-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
@@ -127,6 +98,7 @@
   .modal-tab { padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; color: #8b949e; border: 1px solid #30363d; }
   .modal-tab.active { background: #1f6feb; color: #fff; border-color: #1f6feb; }
   .modal-chart-container { padding: 20px; }
+  .multiplier { color: #8b949e; font-size: 11px; margin-left: 2px; }
 </style>
 </head>
 <body>
@@ -241,12 +213,14 @@ const CHIP_DISPLAY = {
   'triple_captain': '👑 TC', '3xc': '👑 TC',
   'bboost': '🚀 BB', 'wildcard': '🔄 WC', 'freehit': '🆓 FH'
 };
-const POS_LABEL = { 1: '🧤 GK', 2: '🛡️ DEF', 3: '⚙️ MID', 4: '⚡️ FWD' };
 
 let allResults = [], allCapLog = [], latestGW = null;
 let currentGW = null;
-let autoRefreshTimer = null, refreshCountdown = 300;
-let modalChart = null, currentModalPlayer = null, currentModalTab = 'penalty';
+let autoRefreshTimer = null;
+let refreshCountdown = 300;
+let modalChart = null;
+let currentModalPlayer = null;
+let currentModalTab = 'penalty';
 let elementData = {};
 const squadCache = {};
 
@@ -262,7 +236,8 @@ async function supabaseUpsert(table, data) {
     method: 'POST',
     headers: {
       'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal'
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
     },
     body: JSON.stringify(data)
   });
@@ -275,7 +250,8 @@ async function fetchFPL(path) {
     `https://ucwsinzfpvjzdeqncjqc.supabase.co/functions/v1/bright-processor?path=${encodeURIComponent(path)}`,
     { headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` } }
   );
-  return JSON.parse(await res.text());
+  const text = await res.text();
+  return JSON.parse(text);
 }
 
 async function loadData() {
@@ -333,21 +309,37 @@ async function preloadSquads(gw) {
   }
 }
 
-function shirtImg(teamCode, isBench, small = false) {
-  if (!teamCode) return `<span class="${small ? '' : 'player-card-shirt-fallback'}" style="font-size:${small ? '18px' : '26px'}">👕</span>`;
-  const url = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}${isBench ? '_1' : ''}-110.png`;
-  const h = small ? '22px' : '40px';
-  return `<img src="${url}" style="height:${h};width:auto;object-fit:contain" onerror="this.outerHTML='<span style=\\'font-size:${small ? '18' : '26'}px\\'>👕</span>'" alt="">`;
+function startAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  refreshCountdown = 300;
+  autoRefreshTimer = setInterval(async () => {
+    refreshCountdown--;
+    if (refreshCountdown <= 0) {
+      document.getElementById('refresh-indicator').textContent = '🔄';
+      await loadData();
+      refreshCountdown = 300;
+    } else {
+      document.getElementById('refresh-indicator').textContent = `⏱ ${refreshCountdown}s`;
+    }
+  }, 1000);
 }
 
-// 電腦版卡片
-function buildDesktopCards(picks, liveMap, isBench) {
+function shirtImg(teamCode, isBench) {
+  if (!teamCode) return `<span class="player-card-shirt-fallback">👕</span>`;
+  const url = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}${isBench ? '_1' : ''}-110.png`;
+  return `<img src="${url}" onerror="this.parentNode.innerHTML='<span class=\\'player-card-shirt-fallback\\'>👕</span>'" alt="">`;
+}
+
+function buildSquadHTML(picks, liveMap, isBench) {
   return picks.map(p => {
     const el = elementData[p.element] || { name: `#${p.element}`, pos: 1, teamCode: 0 };
     const pts = liveMap[p.element] !== undefined ? liveMap[p.element] : '-';
     const ptsClass = pts === '-' ? '' : pts > 0 ? '' : pts < 0 ? 'negative' : 'zero';
     const isCap = p.is_captain, isVC = p.is_vice_captain;
-    let cardClass = 'player-card' + (isCap ? ' is-captain' : isVC ? ' is-vc' : '') + (isBench ? ' is-bench' : '');
+    let cardClass = 'player-card';
+    if (isCap) cardClass += ' is-captain';
+    else if (isVC) cardClass += ' is-vc';
+    if (isBench) cardClass += ' is-bench';
     const badge = isCap ? `<div class="player-card-badge">© C</div>` : isVC ? `<div class="player-card-badge vc-badge-card">𝓥 VC</div>` : `<div style="height:18px"></div>`;
     return `<div class="${cardClass}">
       <div class="player-card-shirt">${shirtImg(el.teamCode, isBench)}</div>
@@ -356,67 +348,6 @@ function buildDesktopCards(picks, liveMap, isBench) {
       ${badge}
     </div>`;
   }).join('');
-}
-
-// 手機版按位置分組
-function buildMobileSquad(starters, bench, liveMap) {
-  const groups = { 1: [], 2: [], 3: [], 4: [] };
-  starters.forEach(p => {
-    const pos = (elementData[p.element] && elementData[p.element].pos) || 1;
-    groups[pos].push(p);
-  });
-
-  let html = '<div class="squad-mobile">';
-  [1, 2, 3, 4].forEach(pos => {
-    if (!groups[pos].length) return;
-    html += `<div class="squad-pos-group">
-      <div class="squad-pos-label">${POS_LABEL[pos]}</div>
-      <div class="squad-pos-row">`;
-    groups[pos].forEach(p => {
-      const el = elementData[p.element] || { name: `#${p.element}`, pos: 1, teamCode: 0 };
-      const pts = liveMap[p.element] !== undefined ? liveMap[p.element] : '-';
-      const ptsClass = pts === '-' ? '' : pts > 0 ? '' : pts < 0 ? 'negative' : 'zero';
-      const isCap = p.is_captain, isVC = p.is_vice_captain;
-      const cardClass = 'player-card-sm' + (isCap ? ' is-captain' : isVC ? ' is-vc' : '');
-      const badge = isCap ? `<span class="player-card-sm-badge">C</span>` : isVC ? `<span class="player-card-sm-badge vc">VC</span>` : '';
-      html += `<div class="${cardClass}">
-        <div class="player-card-sm-shirt">${shirtImg(el.teamCode, false, true)}</div>
-        <div class="player-card-sm-name">${el.name}</div>
-        ${badge}
-        <div class="player-card-sm-pts ${ptsClass}">${pts}</div>
-      </div>`;
-    });
-    html += `</div></div>`;
-  });
-
-  // 後備
-  html += `<div class="squad-pos-group">
-    <div class="squad-pos-label">🪑 後備</div>
-    <div class="squad-pos-row">`;
-  bench.forEach(p => {
-    const el = elementData[p.element] || { name: `#${p.element}`, pos: 1, teamCode: 0 };
-    const pts = liveMap[p.element] !== undefined ? liveMap[p.element] : '-';
-    const ptsClass = pts === '-' ? '' : pts > 0 ? '' : pts < 0 ? 'negative' : 'zero';
-    html += `<div class="player-card-sm is-bench">
-      <div class="player-card-sm-shirt">${shirtImg(el.teamCode, true, true)}</div>
-      <div class="player-card-sm-name">${el.name}</div>
-      <div class="player-card-sm-pts ${ptsClass}">${pts}</div>
-    </div>`;
-  });
-  html += `</div></div></div>`;
-  return html;
-}
-
-function buildSquadContent(picks, liveMap) {
-  const starters = picks.filter(p => p.position <= 11);
-  const bench = picks.filter(p => p.position > 11);
-  return `
-    <div class="squad-section-label">正選</div>
-    <div class="squad-grid">${buildDesktopCards(starters, liveMap, false)}</div>
-    <div class="squad-section-label">後備</div>
-    <div class="squad-grid">${buildDesktopCards(bench, liveMap, true)}</div>
-    ${buildMobileSquad(starters, bench, liveMap)}
-  `;
 }
 
 async function toggleSquad(entryId, gw) {
@@ -439,7 +370,14 @@ async function toggleSquad(entryId, gw) {
   const cacheKey = `${entryId}_${gw}`;
   if (squadCache[cacheKey]) {
     const { picks, liveMap } = squadCache[cacheKey];
-    squadRow.innerHTML = `<td colspan="${colCount}"><div class="squad-container">${buildSquadContent(picks, liveMap)}</div></td>`;
+    const starters = picks.filter(p => p.position <= 11);
+    const bench = picks.filter(p => p.position > 11);
+    squadRow.innerHTML = `<td colspan="${colCount}"><div class="squad-container">
+      <div class="squad-section-label">正選</div>
+      <div class="squad-grid">${buildSquadHTML(starters, liveMap, false)}</div>
+      <div class="squad-section-label">後備</div>
+      <div class="squad-grid">${buildSquadHTML(bench, liveMap, true)}</div>
+    </div></td>`;
   } else {
     squadRow.innerHTML = `<td colspan="${colCount}"><div class="squad-container"><div class="squad-loading">⏳ 載入陣容...</div></div></td>`;
     if (dataRow) dataRow.insertAdjacentElement('afterend', squadRow);
@@ -452,7 +390,14 @@ async function toggleSquad(entryId, gw) {
       (liveRes.elements || []).forEach(e => { liveMap[e.id] = (e.stats && e.stats.total_points) || 0; });
       const picks = picksRes.picks || [];
       squadCache[cacheKey] = { picks, liveMap };
-      squadRow.querySelector('.squad-container').innerHTML = buildSquadContent(picks, liveMap);
+      const starters = picks.filter(p => p.position <= 11);
+      const bench = picks.filter(p => p.position > 11);
+      squadRow.querySelector('.squad-container').innerHTML = `
+        <div class="squad-section-label">正選</div>
+        <div class="squad-grid">${buildSquadHTML(starters, liveMap, false)}</div>
+        <div class="squad-section-label">後備</div>
+        <div class="squad-grid">${buildSquadHTML(bench, liveMap, true)}</div>
+      `;
     } catch(e) {
       squadRow.querySelector('.squad-container').innerHTML = `<div class="squad-loading">❌ 載入失敗</div>`;
     }
@@ -488,7 +433,8 @@ function switchModalTab(tab) {
 function renderModalChart(playerName, tab) {
   const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
   const labels = gws.map(g => `GW${g}`);
-  const color = PLAYER_COLORS[PLAYER_ORDER.indexOf(playerName)] || '#58a6ff';
+  const playerIdx = PLAYER_ORDER.indexOf(playerName);
+  const color = PLAYER_COLORS[playerIdx] || '#58a6ff';
   let data, label;
   if (tab === 'penalty') {
     data = gws.map(gw => {
@@ -509,7 +455,8 @@ function renderModalChart(playerName, tab) {
     type: 'line',
     data: { labels, datasets: [{ label, data, borderColor: color, backgroundColor: color + '30', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: true }] },
     options: {
-      responsive: true, plugins: { legend: { display: false } },
+      responsive: true,
+      plugins: { legend: { display: false } },
       scales: {
         x: { ticks: { color: '#8b949e', font: { size: 11 } }, grid: { color: '#21262d' } },
         y: {
@@ -522,30 +469,22 @@ function renderModalChart(playerName, tab) {
   });
 }
 
-function startAutoRefresh() {
-  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-  refreshCountdown = 300;
-  autoRefreshTimer = setInterval(async () => {
-    refreshCountdown--;
-    if (refreshCountdown <= 0) {
-      document.getElementById('refresh-indicator').textContent = '🔄';
-      await loadData();
-      refreshCountdown = 300;
-    } else {
-      document.getElementById('refresh-indicator').textContent = `⏱ ${refreshCountdown}s`;
-    }
-  }, 1000);
-}
-
 function renderWeekly(gw) {
   if (!gw) return;
   currentGW = gw;
   document.getElementById('weekly-title').textContent = `GW${gw} 詳情`;
 
   const gws = [...new Set(allResults.map(r => r.gw))];
-  const gwTotals = gws.map(g => ({ gw: g, total: allResults.filter(r => r.gw === g).reduce((s,r) => s + Math.abs(r.total_penalty), 0) })).sort((a,b) => b.total - a.total);
-  document.getElementById('worst-gw-badge').style.display = gwTotals.length && gwTotals[0].gw === gw ? 'inline' : 'none';
-  if (gwTotals.length && gwTotals[0].gw === gw) document.getElementById('worst-gw-badge').textContent = '💀 最衰周';
+  const gwTotals = gws.map(g => {
+    const gwData = allResults.filter(r => r.gw === g);
+    return { gw: g, total: gwData.reduce((s,r) => s + Math.abs(r.total_penalty), 0) };
+  }).sort((a,b) => b.total - a.total);
+  if (gwTotals.length && gwTotals[0].gw === gw) {
+    document.getElementById('worst-gw-badge').style.display = 'inline';
+    document.getElementById('worst-gw-badge').textContent = '💀 最衰周';
+  } else {
+    document.getElementById('worst-gw-badge').style.display = 'none';
+  }
 
   const gwResults = allResults.filter(r => r.gw === gw);
   const caps = allCapLog.filter(r => r.gw === gw);
@@ -553,44 +492,42 @@ function renderWeekly(gw) {
 
   const minPts = Math.min(...gwResults.map(r => r.gross_points));
 
-  // 按累積總分由高到低排序
+  // 跟累積總分排序
   const data = [...gwResults].sort((a,b) => b.cumul_net_points - a.cumul_net_points);
 
   const tableEl = document.createElement('table');
-  tableEl.innerHTML = '<tr><th>玩家</th><th>今周分</th><th>League罰款</th><th>H2H罰款</th><th class="col-important">今周$$$$</th><th class="col-important">累積罰款</th><th class="col-important">累積總分</th><th>隊長</th><th>Cap分</th><th>成功率</th><th>Chip</th></tr>';
+  tableEl.innerHTML = '<tr><th>玩家</th><th>今周分</th><th>League罰款</th><th>H2H罰款</th><th class="col-important">今周$$$$</th><th class="col-important">累積罰款</th><th class="col-important">累積總分</th><th>隊長</th><th>Cap分</th><th>累積Cap分</th><th>成功率</th><th>Chip</th></tr>';
 
   data.forEach(r => {
     const cap = caps.find(c => Number(c.entry_id) === Number(r.entry_id));
     const isLast = r.gross_points === minPts;
     const isLow = r.gross_points < 45 && !isLast;
     const entryId = PLAYER_MAP[r.player_name];
-    const chip = cap ? (CHIP_DISPLAY[cap.chip] || '') : '';
-    const capOK = cap ? cap.cap_ok : null;
-    const isTC = cap && CHIP_TC_KEYS.includes(cap.chip);
-    const multiplier = isTC ? 3 : 2;
 
-    // 隊長顯示：只顯示隊長，用咗VC先顯示VC
+    // 隊長顯示：只顯示有效隊長，VC 只在用咗先 show
     let capNameHtml = '-';
-    if (cap && cap.captain) {
+    let capPtsHtml = '-';
+    if (cap) {
+      const capOK = cap.cap_ok;
       const isVC = cap.captain.includes('(VC)');
       const capName = cap.captain.replace(' (VC)', '');
       const colorClass = capOK === 1 ? 'cap-ok' : 'cap-fail';
-      const vcTag = isVC ? '<span class="vc-badge">(VC)</span>' : '';
+      const vcTag = isVC ? `<span class="vc-badge">(VC)</span>` : '';
       capNameHtml = `<span class="${colorClass}">${capName}${vcTag}</span>`;
+
+      // Cap 分顯示：rawPts ×2 = total 或 ×3 for TC
+      const isTC = CHIP_TC_KEYS.includes(cap.chip || '');
+      const multiplier = isTC ? 3 : 2;
+      const rawPts = Math.round(cap.captain_pts / multiplier);
+      capPtsHtml = `${rawPts}<span class="multiplier">×${multiplier}</span>=${cap.captain_pts}`;
     }
 
-    // Cap分顯示：rawPts ×2 = total 或 ×3 = total
-    let capPtsHtml = '-';
-    if (cap && cap.captain_pts !== null && cap.captain_pts !== undefined) {
-      const total = cap.captain_pts;
-      const raw = Math.round(total / multiplier);
-      capPtsHtml = `${raw} ×${multiplier} = <strong>${total}</strong>`;
-    }
-
+    const chip = cap ? (CHIP_DISPLAY[cap.chip] || '') : '';
     const allCapsForPlayer = allCapLog.filter(c => c.player_name === r.player_name && c.gw <= gw);
     const ok = allCapsForPlayer.filter(c => c.cap_ok === 1).length;
     const total = allCapsForPlayer.length;
     const rate = total > 0 ? (ok/total*100).toFixed(0) + '%' : '-';
+    const cumulCapPts = allCapsForPlayer.reduce((s,c) => s + (c.captain_pts || 0), 0);
     const fmt = v => v === 0 ? '$0' : `-$${Math.abs(v)}`;
 
     const tr = document.createElement('tr');
@@ -607,10 +544,14 @@ function renderWeekly(gw) {
       <td class="col-important">${r.cumul_net_points}</td>
       <td>${capNameHtml}</td>
       <td>${capPtsHtml}</td>
+      <td>${cumulCapPts}</td>
       <td>${rate}</td>
       <td>${chip}</td>
     `;
-    tr.querySelector('.player-link').addEventListener('click', e => { e.stopPropagation(); showPlayerChart(r.player_name); });
+    tr.querySelector('.player-link').addEventListener('click', e => {
+      e.stopPropagation();
+      showPlayerChart(r.player_name);
+    });
     tr.addEventListener('click', () => toggleSquad(entryId, gw));
     tableEl.appendChild(tr);
   });
@@ -699,15 +640,21 @@ function renderWorstGWTable() {
   gwTotals.slice(0, 10).forEach((g, i) => {
     html += `<tr ${i === 0 ? 'style="background:#2d1515"' : ''}>
       <td class="rank-num">${i+1}${i === 0 ? ' 💀' : ''}</td>
-      <td><strong>GW${g.gw}</strong></td><td>-$${g.totalPenalty}</td><td>${g.playerCount} 人</td></tr>`;
+      <td><strong>GW${g.gw}</strong></td>
+      <td>-$${g.totalPenalty}</td>
+      <td>${g.playerCount} 人</td></tr>`;
   });
   html += '</table>';
   document.getElementById('worstgw-table').innerHTML = html;
 }
 
 function switchView(view) {
-  ['weekly','summary'].forEach(v => { document.getElementById(`view-${v}`).style.display = v === view ? 'block' : 'none'; });
-  document.querySelectorAll('.nav-tab').forEach((tab, i) => { tab.classList.toggle('active', ['weekly','summary'][i] === view); });
+  ['weekly','summary'].forEach(v => {
+    document.getElementById(`view-${v}`).style.display = v === view ? 'block' : 'none';
+  });
+  document.querySelectorAll('.nav-tab').forEach((tab, i) => {
+    tab.classList.toggle('active', ['weekly','summary'][i] === view);
+  });
 }
 
 function onGWSelect() {
@@ -721,7 +668,9 @@ function toggleAdmin() {
 }
 
 function checkPwd() {
-  if (document.getElementById('admin-password').value !== ADMIN_PASSWORD) { setStatus('❌ 密碼錯誤', 'err'); return false; }
+  if (document.getElementById('admin-password').value !== ADMIN_PASSWORD) {
+    setStatus('❌ 密碼錯誤', 'err'); return false;
+  }
   return true;
 }
 
@@ -733,7 +682,8 @@ async function updateGW() {
   if (!checkPwd()) return;
   const gw = parseInt(document.getElementById('gw-input').value);
   if (!gw || gw < 1 || gw > 38) { setStatus('❌ 請輸入有效 GW', 'err'); return; }
-  setAllDisabled(true); setStatus(`⏳ 更新 GW${gw}...`, '');
+  setAllDisabled(true);
+  setStatus(`⏳ 更新 GW${gw}...`, '');
   try { await runUpdate(gw); setStatus(`✅ GW${gw} 完成！`, 'ok'); }
   catch(e) { setStatus('❌ ' + e.message, 'err'); }
   setAllDisabled(false);
@@ -741,14 +691,16 @@ async function updateGW() {
 
 async function updateLatest() {
   if (!checkPwd()) return;
-  setAllDisabled(true); setStatus('🔄 拎緊當前 GW...', '');
+  setAllDisabled(true);
+  setStatus('🔄 拎緊當前 GW...', '');
   try {
     const boot = await fetchFPL('bootstrap-static/');
     let gw = 0;
     boot.events.forEach(e => { if (e.is_current) gw = e.id; });
     if (!gw) boot.events.forEach(e => { if (e.finished && e.id > gw) gw = e.id; });
     if (!gw) { setStatus('❌ 搵唔到當前 GW', 'err'); setAllDisabled(false); return; }
-    await runUpdate(gw); setStatus(`✅ GW${gw} 完成！`, 'ok');
+    await runUpdate(gw);
+    setStatus(`✅ GW${gw} 完成！`, 'ok');
   } catch(e) { setStatus('❌ ' + e.message, 'err'); }
   setAllDisabled(false);
 }
@@ -762,10 +714,12 @@ async function batchUpdate() {
   setAllDisabled(true);
   for (let gw = from; gw <= to; gw++) {
     setStatus(`⏳ GW${gw}...（${gw-from+1}/${to-from+1}）`, '');
-    try { await runUpdate(gw); } catch(e) { setStatus(`❌ GW${gw} 出錯：${e.message}`, 'err'); }
+    try { await runUpdate(gw); }
+    catch(e) { setStatus(`❌ GW${gw} 出錯：${e.message}`, 'err'); }
     await new Promise(r => setTimeout(r, 1000));
   }
-  setStatus(`✅ GW${from}–${to} 完成！`, 'ok'); setAllDisabled(false);
+  setStatus(`✅ GW${from}–${to} 完成！`, 'ok');
+  setAllDisabled(false);
 }
 
 function resolveEffectiveCaptain(capEl, vcEl, liveData, rawChip, teamMatchStatus, elementTeam) {
@@ -774,21 +728,30 @@ function resolveEffectiveCaptain(capEl, vcEl, liveData, rawChip, teamMatchStatus
   const capMins = (liveData[capEl] && liveData[capEl].minutes) || 0;
   const capTeam = elementTeam[capEl];
   const capStatus = capTeam ? (teamMatchStatus[capTeam] || { noFixture: true }) : { noFixture: true };
-  if (capMins === 0 && (capStatus.noFixture || capStatus.kickedOff) && vcEl) return { el: vcEl, multiplier: 2, usedVC: true };
+  if (capMins === 0 && (capStatus.noFixture || capStatus.kickedOff) && vcEl) {
+    return { el: vcEl, multiplier: 2, usedVC: true };
+  }
   return { el: capEl, multiplier: 2, usedVC: false };
 }
 
 async function runUpdate(gw) {
   const [h2hRes, bootRes, liveRes, fixtureRes] = await Promise.all([
     fetchFPL(`leagues-h2h-matches/league/${LEAGUE_ID}/?event=${gw}`),
-    fetchFPL('bootstrap-static/'), fetchFPL(`event/${gw}/live/`), fetchFPL(`fixtures/?event=${gw}`)
+    fetchFPL('bootstrap-static/'),
+    fetchFPL(`event/${gw}/live/`),
+    fetchFPL(`fixtures/?event=${gw}`)
   ]);
   const netByEntry = {};
-  (h2hRes.results || []).forEach(m => { netByEntry[m.entry_1_entry] = m.entry_1_points; netByEntry[m.entry_2_entry] = m.entry_2_points; });
+  (h2hRes.results || []).forEach(m => {
+    netByEntry[m.entry_1_entry] = m.entry_1_points;
+    netByEntry[m.entry_2_entry] = m.entry_2_points;
+  });
   const elementName = {}, elementTeam = {};
   (bootRes.elements || []).forEach(el => { elementName[el.id] = el.web_name; elementTeam[el.id] = el.team; });
   const liveData = {};
-  (liveRes.elements || []).forEach(e => { liveData[e.id] = { points: (e.stats && e.stats.total_points) || 0, minutes: (e.stats && e.stats.minutes) || 0 }; });
+  (liveRes.elements || []).forEach(e => {
+    liveData[e.id] = { points: (e.stats && e.stats.total_points) || 0, minutes: (e.stats && e.stats.minutes) || 0 };
+  });
   const now = new Date();
   const teamMatchStatus = {};
   (fixtureRes || []).forEach(f => {
@@ -826,8 +789,10 @@ async function runUpdate(gw) {
     const h2hp = calcH2H(h2hRes.results || [], entryId);
     const prev = prevByEntry[Number(entryId)];
     weeklyRows.push({
-      gw, player_name: name, entry_id: entryId, gross_points: gross, net_points: net,
-      league_penalty: lp, h2h_penalty: h2hp, total_penalty: lp + h2hp,
+      gw, player_name: name, entry_id: entryId,
+      gross_points: gross, net_points: net,
+      league_penalty: lp, h2h_penalty: h2hp,
+      total_penalty: lp + h2hp,
       cumul_penalty: (prev ? prev.cumul_penalty : 0) + lp + h2hp,
       cumul_net_points: (prev ? prev.cumul_net_points : 0) + net,
       updated_at: new Date().toISOString()
@@ -861,7 +826,8 @@ function calcH2H(matches, entryId) {
 
 function setStatus(msg, type) {
   const el = document.getElementById('admin-status');
-  el.textContent = msg; el.className = 'status-msg ' + type;
+  el.textContent = msg;
+  el.className = 'status-msg ' + type;
 }
 
 loadData();
