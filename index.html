@@ -373,26 +373,12 @@ async function toggleSquad(entryId, gw) {
         <div class="squad-section-label">正選</div>
         <div class="squad-grid">${buildSquadHTML(starters, liveMap, false)}</div>
         <div class="squad-section-label">後備</div>
-        <div class="squad-grid">${buildSquadHTML(bench, liveMap, true)}</div>`;
+        <div class="squad-grid">${buildSquadHTML(bench, liveMap, true)}</div>
+      `;
     } catch(e) {
       squadRow.querySelector('.squad-container').innerHTML = `<div class="squad-loading">❌ 載入失敗</div>`;
     }
   }
-}
-
-function startAutoRefresh() {
-  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-  refreshCountdown = 300;
-  autoRefreshTimer = setInterval(async () => {
-    refreshCountdown--;
-    if (refreshCountdown <= 0) {
-      document.getElementById('refresh-indicator').textContent = '🔄';
-      await loadData();
-      refreshCountdown = 300;
-    } else {
-      document.getElementById('refresh-indicator').textContent = `⏱ ${refreshCountdown}s`;
-    }
-  }, 1000);
 }
 
 function showPlayerChart(playerName) {
@@ -422,7 +408,8 @@ function switchModalTab(tab) {
 function renderModalChart(playerName, tab) {
   const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
   const labels = gws.map(g => `GW${g}`);
-  const color = PLAYER_COLORS[PLAYER_ORDER.indexOf(playerName)] || '#58a6ff';
+  const playerIdx = PLAYER_ORDER.indexOf(playerName);
+  const color = PLAYER_COLORS[playerIdx] || '#58a6ff';
   let data, label;
   if (tab === 'penalty') {
     data = gws.map(gw => {
@@ -457,15 +444,31 @@ function renderModalChart(playerName, tab) {
   });
 }
 
+function startAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  refreshCountdown = 300;
+  autoRefreshTimer = setInterval(async () => {
+    refreshCountdown--;
+    if (refreshCountdown <= 0) {
+      document.getElementById('refresh-indicator').textContent = '🔄';
+      await loadData();
+      refreshCountdown = 300;
+    } else {
+      document.getElementById('refresh-indicator').textContent = `⏱ ${refreshCountdown}s`;
+    }
+  }, 1000);
+}
+
 function renderWeekly(gw) {
   if (!gw) return;
   currentGW = gw;
   document.getElementById('weekly-title').textContent = `GW${gw} 詳情`;
 
   const gws = [...new Set(allResults.map(r => r.gw))];
-  const gwTotals = gws.map(g => ({
-    gw: g, total: allResults.filter(r => r.gw === g).reduce((s,r) => s + Math.abs(r.total_penalty), 0)
-  })).sort((a,b) => b.total - a.total);
+  const gwTotals = gws.map(g => {
+    const gwData = allResults.filter(r => r.gw === g);
+    return { gw: g, total: gwData.reduce((s,r) => s + Math.abs(r.total_penalty), 0) };
+  }).sort((a,b) => b.total - a.total);
   if (gwTotals.length && gwTotals[0].gw === gw) {
     document.getElementById('worst-gw-badge').style.display = 'inline';
     document.getElementById('worst-gw-badge').textContent = '💀 最衰周';
@@ -479,8 +482,11 @@ function renderWeekly(gw) {
 
   const minPts = Math.min(...gwResults.map(r => r.gross_points));
 
-  // 按累積總分由高到低排序
-  const data = [...gwResults].sort((a,b) => b.cumul_net_points - a.cumul_net_points);
+  // 改動1：按累積總分由高到低排序
+  const data = PLAYER_ORDER
+    .map(name => gwResults.find(r => r.player_name === name))
+    .filter(Boolean)
+    .sort((a, b) => b.cumul_net_points - a.cumul_net_points);
 
   const tableEl = document.createElement('table');
   tableEl.innerHTML = '<tr><th>玩家</th><th>今周分</th><th>League罰款</th><th>H2H罰款</th><th class="col-important">今周$$$$</th><th class="col-important">累積罰款</th><th class="col-important">累積總分</th><th>隊長</th><th>今周Cap分</th><th>累積Cap分</th><th>成功率</th><th>Chip</th></tr>';
@@ -491,25 +497,27 @@ function renderWeekly(gw) {
     const isLow = r.gross_points < 45 && !isLast;
     const entryId = PLAYER_MAP[r.player_name];
 
-    // 隊長顯示：只顯示 captain，VC 只係冇出先顯示
-    let capNameHtml = '-';
-    let capPtsDisplay = '-';
-    if (cap) {
-      const isVC = cap.captain.includes('(VC)');
-      const capName = cap.captain.replace(' (VC)', '');
-      const colorClass = cap.cap_ok === 1 ? 'cap-ok' : 'cap-fail';
-      // 判斷係咪 TC
-      const chip = cap.chip || '';
-      const isTC = CHIP_TC_KEYS.includes(chip);
-      const multiplier = isTC ? 3 : 2;
-      const rawPts = isTC ? Math.round(cap.captain_pts / 3) : Math.round(cap.captain_pts / 2);
+    // 改動2：只顯示captain，用咗VC先顯示VC名
+    const isVC = cap && cap.captain.includes('(VC)');
+    const capName = cap ? cap.captain.replace(' (VC)', '') : '-';
+    const capDisplayName = isVC ? `${capName}<span class="vc-badge">(VC)</span>` : capName;
 
-      if (isVC) {
-        capNameHtml = `<span class="${colorClass}">${capName}<span class="vc-badge">(VC)</span></span>`;
-      } else {
-        capNameHtml = `<span class="${colorClass}">${capName}</span>`;
-      }
+    const chip = cap ? (CHIP_DISPLAY[cap.chip] || '') : '';
+    const capOK = cap ? cap.cap_ok : null;
+
+    // 改動3：Cap分顯示 rawPts×multiplier=總分
+    let capPtsDisplay = '-';
+    if (cap && cap.captain_pts !== null && cap.captain_pts !== undefined) {
+      const isTC = CHIP_TC_KEYS.includes(cap.chip || '');
+      const multiplier = isTC ? 3 : 2;
+      const rawPts = Math.round(cap.captain_pts / multiplier);
       capPtsDisplay = `${rawPts}×${multiplier}=${cap.captain_pts}`;
+    }
+
+    let capNameHtml = '-';
+    if (cap) {
+      const colorClass = capOK === 1 ? 'cap-ok' : 'cap-fail';
+      capNameHtml = `<span class="${colorClass}">${capDisplayName}</span>`;
     }
 
     const allCapsForPlayer = allCapLog.filter(c => c.player_name === r.player_name && c.gw <= gw);
@@ -517,7 +525,6 @@ function renderWeekly(gw) {
     const total = allCapsForPlayer.length;
     const rate = total > 0 ? (ok/total*100).toFixed(0) + '%' : '-';
     const cumulCapPts = allCapsForPlayer.reduce((s,c) => s + (c.captain_pts || 0), 0);
-    const chip = cap ? (CHIP_DISPLAY[cap.chip] || '') : '';
     const fmt = v => v === 0 ? '$0' : `-$${Math.abs(v)}`;
 
     const tr = document.createElement('tr');
