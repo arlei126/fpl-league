@@ -61,7 +61,7 @@
   .squad-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
   .player-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; width: 76px; text-align: center; overflow: hidden; flex-shrink: 0; }
   .player-card.is-captain { border-color: #ffd700; box-shadow: 0 0 6px rgba(255,215,0,0.3); }
-  .player-card.is-vc { border-color: #c0c0c0; box-shadow: 0 0 6px rgba(192,192,192,0.3); }
+  .player-card.is-vc-active { border-color: #c0c0c0; box-shadow: 0 0 6px rgba(192,192,192,0.3); }
   .player-card.is-bench { opacity: 0.55; }
   .player-card-shirt { padding: 8px 0 4px; background: #1c2128; height: 52px; display: flex; align-items: center; justify-content: center; }
   .player-card-shirt img { height: 40px; width: auto; object-fit: contain; }
@@ -309,17 +309,29 @@ function shirtImg(teamCode, isBench) {
   return `<img src="${url}" onerror="this.parentNode.innerHTML='<span class=\\'player-card-shirt-fallback\\'>👕</span>'" alt="">`;
 }
 
-function buildSquadHTML(picks, liveMap, isBench) {
+// usedVC = cap_log 入面 captain 有 (VC) 字
+function buildSquadHTML(picks, liveMap, isBench, usedVC) {
   return picks.map(p => {
     const el = elementData[p.element] || { name: `#${p.element}`, pos: 1, teamCode: 0 };
     const pts = liveMap[p.element] !== undefined ? liveMap[p.element] : '-';
     const ptsClass = pts === '-' ? '' : pts > 0 ? '' : pts < 0 ? 'negative' : 'zero';
-    const isCap = p.is_captain, isVC = p.is_vice_captain;
+    const isCap = p.is_captain;
+    const isVC = p.is_vice_captain;
+
     let cardClass = 'player-card';
-    if (isCap) cardClass += ' is-captain';
-    else if (isVC) cardClass += ' is-vc';
+    // 金邊：正常係 captain，如果 VC 被用就係 vc 嗰個
+    if (!usedVC && isCap) cardClass += ' is-captain';
+    if (usedVC && isVC) cardClass += ' is-vc-active';
     if (isBench) cardClass += ' is-bench';
-    const badge = isCap ? `<div class="player-card-badge">© C</div>` : isVC ? `<div class="player-card-badge vc-badge-card">𝓥 VC</div>` : `<div style="height:18px"></div>`;
+
+    // badge：只顯示 C（captain 冇出先顯示 VC badge）
+    let badge = '<div style="height:18px"></div>';
+    if (!usedVC && isCap) {
+      badge = `<div class="player-card-badge">© C</div>`;
+    } else if (usedVC && isVC) {
+      badge = `<div class="player-card-badge vc-badge-card">𝓥 VC</div>`;
+    }
+
     return `<div class="${cardClass}">
       <div class="player-card-shirt">${shirtImg(el.teamCode, isBench)}</div>
       <div class="player-card-name">${el.name}</div>
@@ -329,31 +341,39 @@ function buildSquadHTML(picks, liveMap, isBench) {
   }).join('');
 }
 
-async function toggleSquad(entryId, gw) {
+async function toggleSquad(entryId, gw, usedVC) {
   const squadRowId = `squad-${entryId}`;
   const existingRow = document.getElementById(squadRowId);
   const dataRow = document.querySelector(`tr.data-row[data-entry="${entryId}"]`);
+
   if (existingRow) {
     existingRow.remove();
     if (dataRow) dataRow.classList.remove('expanded');
     return;
   }
+
   if (dataRow) dataRow.classList.add('expanded');
   const colCount = dataRow ? dataRow.cells.length : 12;
   const squadRow = document.createElement('tr');
   squadRow.id = squadRowId;
   squadRow.className = 'squad-row';
+
   const cacheKey = `${entryId}_${gw}`;
-  if (squadCache[cacheKey]) {
-    const { picks, liveMap } = squadCache[cacheKey];
+
+  function renderSquadContent(picks, liveMap) {
     const starters = picks.filter(p => p.position <= 11);
     const bench = picks.filter(p => p.position > 11);
-    squadRow.innerHTML = `<td colspan="${colCount}"><div class="squad-container">
+    return `
       <div class="squad-section-label">正選</div>
-      <div class="squad-grid">${buildSquadHTML(starters, liveMap, false)}</div>
+      <div class="squad-grid">${buildSquadHTML(starters, liveMap, false, usedVC)}</div>
       <div class="squad-section-label">後備</div>
-      <div class="squad-grid">${buildSquadHTML(bench, liveMap, true)}</div>
-    </div></td>`;
+      <div class="squad-grid">${buildSquadHTML(bench, liveMap, true, usedVC)}</div>
+    `;
+  }
+
+  if (squadCache[cacheKey]) {
+    const { picks, liveMap } = squadCache[cacheKey];
+    squadRow.innerHTML = `<td colspan="${colCount}"><div class="squad-container">${renderSquadContent(picks, liveMap)}</div></td>`;
     if (dataRow) dataRow.insertAdjacentElement('afterend', squadRow);
   } else {
     squadRow.innerHTML = `<td colspan="${colCount}"><div class="squad-container"><div class="squad-loading">⏳ 載入陣容...</div></div></td>`;
@@ -367,18 +387,26 @@ async function toggleSquad(entryId, gw) {
       (liveRes.elements || []).forEach(e => { liveMap[e.id] = (e.stats && e.stats.total_points) || 0; });
       const picks = picksRes.picks || [];
       squadCache[cacheKey] = { picks, liveMap };
-      const starters = picks.filter(p => p.position <= 11);
-      const bench = picks.filter(p => p.position > 11);
-      squadRow.querySelector('.squad-container').innerHTML = `
-        <div class="squad-section-label">正選</div>
-        <div class="squad-grid">${buildSquadHTML(starters, liveMap, false)}</div>
-        <div class="squad-section-label">後備</div>
-        <div class="squad-grid">${buildSquadHTML(bench, liveMap, true)}</div>
-      `;
+      squadRow.querySelector('.squad-container').innerHTML = renderSquadContent(picks, liveMap);
     } catch(e) {
       squadRow.querySelector('.squad-container').innerHTML = `<div class="squad-loading">❌ 載入失敗</div>`;
     }
   }
+}
+
+function startAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  refreshCountdown = 300;
+  autoRefreshTimer = setInterval(async () => {
+    refreshCountdown--;
+    if (refreshCountdown <= 0) {
+      document.getElementById('refresh-indicator').textContent = '🔄';
+      await loadData();
+      refreshCountdown = 300;
+    } else {
+      document.getElementById('refresh-indicator').textContent = `⏱ ${refreshCountdown}s`;
+    }
+  }, 1000);
 }
 
 function showPlayerChart(playerName) {
@@ -408,15 +436,11 @@ function switchModalTab(tab) {
 function renderModalChart(playerName, tab) {
   const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
   const labels = gws.map(g => `GW${g}`);
-  const playerIdx = PLAYER_ORDER.indexOf(playerName);
-  const color = PLAYER_COLORS[playerIdx] || '#58a6ff';
+  const color = PLAYER_COLORS[PLAYER_ORDER.indexOf(playerName)] || '#58a6ff';
   let data, label;
   if (tab === 'penalty') {
-    data = gws.map(gw => {
-      const row = allResults.find(r => r.player_name === playerName && r.gw === gw);
-      return row ? Math.abs(row.cumul_penalty) : null;
-    });
-    label = '累積罰款 ($)';
+    data = gws.map(gw => { const r = allResults.find(r => r.player_name === playerName && r.gw === gw); return r ? Math.abs(r.cumul_penalty) : null; });
+    label = '累積罰款';
   } else {
     data = gws.map(gw => {
       const gwData = allResults.filter(r => r.gw === gw).sort((a,b) => b.cumul_net_points - a.cumul_net_points);
@@ -430,33 +454,13 @@ function renderModalChart(playerName, tab) {
     type: 'line',
     data: { labels, datasets: [{ label, data, borderColor: color, backgroundColor: color + '30', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: true }] },
     options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
+      responsive: true, plugins: { legend: { display: false } },
       scales: {
         x: { ticks: { color: '#8b949e', font: { size: 11 } }, grid: { color: '#21262d' } },
-        y: {
-          ticks: { color: '#8b949e', font: { size: 11 }, callback: v => tab === 'penalty' ? `$${v}` : `第${9-v}名` },
-          grid: { color: '#21262d' }, reverse: false,
-          min: tab === 'rank' ? 1 : undefined, max: tab === 'rank' ? 8 : undefined
-        }
+        y: { ticks: { color: '#8b949e', font: { size: 11 }, callback: v => tab === 'penalty' ? `$${v}` : `第${9-v}名` }, grid: { color: '#21262d' }, reverse: false, min: tab === 'rank' ? 1 : undefined, max: tab === 'rank' ? 8 : undefined }
       }
     }
   });
-}
-
-function startAutoRefresh() {
-  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-  refreshCountdown = 300;
-  autoRefreshTimer = setInterval(async () => {
-    refreshCountdown--;
-    if (refreshCountdown <= 0) {
-      document.getElementById('refresh-indicator').textContent = '🔄';
-      await loadData();
-      refreshCountdown = 300;
-    } else {
-      document.getElementById('refresh-indicator').textContent = `⏱ ${refreshCountdown}s`;
-    }
-  }, 1000);
 }
 
 function renderWeekly(gw) {
@@ -464,10 +468,9 @@ function renderWeekly(gw) {
   currentGW = gw;
   document.getElementById('weekly-title').textContent = `GW${gw} 詳情`;
 
-  const gws = [...new Set(allResults.map(r => r.gw))];
-  const gwTotals = gws.map(g => {
-    const gwData = allResults.filter(r => r.gw === g);
-    return { gw: g, total: gwData.reduce((s,r) => s + Math.abs(r.total_penalty), 0) };
+  const gwTotals = [...new Set(allResults.map(r => r.gw))].map(g => {
+    const d = allResults.filter(r => r.gw === g);
+    return { gw: g, total: d.reduce((s,r) => s + Math.abs(r.total_penalty), 0) };
   }).sort((a,b) => b.total - a.total);
   if (gwTotals.length && gwTotals[0].gw === gw) {
     document.getElementById('worst-gw-badge').style.display = 'inline';
@@ -481,12 +484,8 @@ function renderWeekly(gw) {
   if (!gwResults.length) { document.getElementById('weekly-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
 
   const minPts = Math.min(...gwResults.map(r => r.gross_points));
-
-  // 改動1：按累積總分由高到低排序
-  const data = PLAYER_ORDER
-    .map(name => gwResults.find(r => r.player_name === name))
-    .filter(Boolean)
-    .sort((a, b) => b.cumul_net_points - a.cumul_net_points);
+  // 按累積總分由高到低排
+  const data = [...gwResults].sort((a,b) => b.cumul_net_points - a.cumul_net_points);
 
   const tableEl = document.createElement('table');
   tableEl.innerHTML = '<tr><th>玩家</th><th>今周分</th><th>League罰款</th><th>H2H罰款</th><th class="col-important">今周$$$$</th><th class="col-important">累積罰款</th><th class="col-important">累積總分</th><th>隊長</th><th>今周Cap分</th><th>累積Cap分</th><th>成功率</th><th>Chip</th></tr>';
@@ -497,27 +496,20 @@ function renderWeekly(gw) {
     const isLow = r.gross_points < 45 && !isLast;
     const entryId = PLAYER_MAP[r.player_name];
 
-    // 改動2：只顯示captain，用咗VC先顯示VC名
-    const isVC = cap && cap.captain.includes('(VC)');
-    const capName = cap ? cap.captain.replace(' (VC)', '') : '-';
-    const capDisplayName = isVC ? `${capName}<span class="vc-badge">(VC)</span>` : capName;
-
+    // 判斷 VC 係咪被用
+    const usedVC = cap && cap.captain && cap.captain.includes('(VC)');
+    // 只顯示有效隊長名（已係正確嘅 C 或 VC）
+    const capDisplayName = cap ? cap.captain.replace(' (VC)', '') : '-';
     const chip = cap ? (CHIP_DISPLAY[cap.chip] || '') : '';
+    // 今周Cap分：直接顯示 captain_pts（已係乘完嘅數，x2 或 x3）
+    const capPts = cap ? cap.captain_pts : '-';
     const capOK = cap ? cap.cap_ok : null;
-
-    // 改動3：Cap分顯示 rawPts×multiplier=總分
-    let capPtsDisplay = '-';
-    if (cap && cap.captain_pts !== null && cap.captain_pts !== undefined) {
-      const isTC = CHIP_TC_KEYS.includes(cap.chip || '');
-      const multiplier = isTC ? 3 : 2;
-      const rawPts = Math.round(cap.captain_pts / multiplier);
-      capPtsDisplay = `${rawPts}×${multiplier}=${cap.captain_pts}`;
-    }
 
     let capNameHtml = '-';
     if (cap) {
       const colorClass = capOK === 1 ? 'cap-ok' : 'cap-fail';
-      capNameHtml = `<span class="${colorClass}">${capDisplayName}</span>`;
+      const vcLabel = usedVC ? '<span class="vc-badge">(VC)</span>' : '';
+      capNameHtml = `<span class="${colorClass}">${capDisplayName}${vcLabel}</span>`;
     }
 
     const allCapsForPlayer = allCapLog.filter(c => c.player_name === r.player_name && c.gw <= gw);
@@ -540,16 +532,17 @@ function renderWeekly(gw) {
       <td class="col-important">${fmt(r.cumul_penalty)}</td>
       <td class="col-important">${r.cumul_net_points}</td>
       <td>${capNameHtml}</td>
-      <td>${capPtsDisplay}</td>
+      <td>${capPts}</td>
       <td>${cumulCapPts}</td>
       <td>${rate}</td>
       <td>${chip}</td>
     `;
+
     tr.querySelector('.player-link').addEventListener('click', e => {
       e.stopPropagation();
       showPlayerChart(r.player_name);
     });
-    tr.addEventListener('click', () => toggleSquad(entryId, gw));
+    tr.addEventListener('click', () => toggleSquad(entryId, gw, usedVC));
     tableEl.appendChild(tr);
   });
 
@@ -607,17 +600,15 @@ function renderCaptainTable() {
 
 function renderLastPlaceTable() {
   const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
-  const lastPlaceCount = {};
-  PLAYER_ORDER.forEach(name => lastPlaceCount[name] = 0);
+  const cnt = {};
+  PLAYER_ORDER.forEach(n => cnt[n] = 0);
   gws.forEach(gw => {
-    const gwData = allResults.filter(r => r.gw === gw);
-    if (!gwData.length) return;
-    const minPts = Math.min(...gwData.map(r => r.gross_points));
-    gwData.filter(r => r.gross_points === minPts).forEach(r => {
-      if (lastPlaceCount[r.player_name] !== undefined) lastPlaceCount[r.player_name]++;
-    });
+    const d = allResults.filter(r => r.gw === gw);
+    if (!d.length) return;
+    const min = Math.min(...d.map(r => r.gross_points));
+    d.filter(r => r.gross_points === min).forEach(r => { if (cnt[r.player_name] !== undefined) cnt[r.player_name]++; });
   });
-  const data = PLAYER_ORDER.map(name => ({ name, count: lastPlaceCount[name] || 0 })).sort((a,b) => b.count - a.count);
+  const data = PLAYER_ORDER.map(n => ({ name: n, count: cnt[n] || 0 })).sort((a,b) => b.count - a.count);
   let html = '<table><tr><th>#</th><th>玩家</th><th>包尾次數</th></tr>';
   data.forEach((p, i) => {
     html += `<tr><td class="rank-num">${i+1}</td><td><strong>${p.name}</strong></td><td>${p.count} 次</td></tr>`;
@@ -628,13 +619,13 @@ function renderLastPlaceTable() {
 
 function renderWorstGWTable() {
   const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
-  const gwTotals = gws.map(gw => {
+  const d = gws.map(gw => {
     const gwData = allResults.filter(r => r.gw === gw);
     return { gw, totalPenalty: gwData.reduce((s,r) => s + Math.abs(r.total_penalty), 0), playerCount: gwData.filter(r => r.total_penalty < 0).length };
   }).sort((a,b) => b.totalPenalty - a.totalPenalty);
-  if (!gwTotals.length) { document.getElementById('worstgw-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
+  if (!d.length) { document.getElementById('worstgw-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
   let html = '<table><tr><th>#</th><th>GW</th><th>總罰款</th><th>受罰人數</th></tr>';
-  gwTotals.slice(0, 10).forEach((g, i) => {
+  d.slice(0, 10).forEach((g, i) => {
     html += `<tr ${i === 0 ? 'style="background:#2d1515"' : ''}>
       <td class="rank-num">${i+1}${i === 0 ? ' 💀' : ''}</td>
       <td><strong>GW${g.gw}</strong></td><td>-$${g.totalPenalty}</td><td>${g.playerCount} 人</td></tr>`;
@@ -644,12 +635,8 @@ function renderWorstGWTable() {
 }
 
 function switchView(view) {
-  ['weekly','summary'].forEach(v => {
-    document.getElementById(`view-${v}`).style.display = v === view ? 'block' : 'none';
-  });
-  document.querySelectorAll('.nav-tab').forEach((tab, i) => {
-    tab.classList.toggle('active', ['weekly','summary'][i] === view);
-  });
+  ['weekly','summary'].forEach(v => { document.getElementById(`view-${v}`).style.display = v === view ? 'block' : 'none'; });
+  document.querySelectorAll('.nav-tab').forEach((tab, i) => { tab.classList.toggle('active', ['weekly','summary'][i] === view); });
 }
 
 function onGWSelect() {
@@ -658,14 +645,12 @@ function onGWSelect() {
 }
 
 function toggleAdmin() {
-  const panel = document.getElementById('admin-panel');
-  panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+  const p = document.getElementById('admin-panel');
+  p.style.display = p.style.display === 'block' ? 'none' : 'block';
 }
 
 function checkPwd() {
-  if (document.getElementById('admin-password').value !== ADMIN_PASSWORD) {
-    setStatus('❌ 密碼錯誤', 'err'); return false;
-  }
+  if (document.getElementById('admin-password').value !== ADMIN_PASSWORD) { setStatus('❌ 密碼錯誤', 'err'); return false; }
   return true;
 }
 
@@ -677,8 +662,7 @@ async function updateGW() {
   if (!checkPwd()) return;
   const gw = parseInt(document.getElementById('gw-input').value);
   if (!gw || gw < 1 || gw > 38) { setStatus('❌ 請輸入有效 GW', 'err'); return; }
-  setAllDisabled(true);
-  setStatus(`⏳ 更新 GW${gw}...`, '');
+  setAllDisabled(true); setStatus(`⏳ 更新 GW${gw}...`, '');
   try { await runUpdate(gw); setStatus(`✅ GW${gw} 完成！`, 'ok'); }
   catch(e) { setStatus('❌ ' + e.message, 'err'); }
   setAllDisabled(false);
@@ -686,16 +670,14 @@ async function updateGW() {
 
 async function updateLatest() {
   if (!checkPwd()) return;
-  setAllDisabled(true);
-  setStatus('🔄 拎緊當前 GW...', '');
+  setAllDisabled(true); setStatus('🔄 拎緊當前 GW...', '');
   try {
     const boot = await fetchFPL('bootstrap-static/');
     let gw = 0;
     boot.events.forEach(e => { if (e.is_current) gw = e.id; });
     if (!gw) boot.events.forEach(e => { if (e.finished && e.id > gw) gw = e.id; });
     if (!gw) { setStatus('❌ 搵唔到當前 GW', 'err'); setAllDisabled(false); return; }
-    await runUpdate(gw);
-    setStatus(`✅ GW${gw} 完成！`, 'ok');
+    await runUpdate(gw); setStatus(`✅ GW${gw} 完成！`, 'ok');
   } catch(e) { setStatus('❌ ' + e.message, 'err'); }
   setAllDisabled(false);
 }
@@ -709,8 +691,7 @@ async function batchUpdate() {
   setAllDisabled(true);
   for (let gw = from; gw <= to; gw++) {
     setStatus(`⏳ GW${gw}...（${gw-from+1}/${to-from+1}）`, '');
-    try { await runUpdate(gw); }
-    catch(e) { setStatus(`❌ GW${gw} 出錯：${e.message}`, 'err'); }
+    try { await runUpdate(gw); } catch(e) { setStatus(`❌ GW${gw} 出錯：${e.message}`, 'err'); }
     await new Promise(r => setTimeout(r, 1000));
   }
   setStatus(`✅ GW${from}–${to} 完成！`, 'ok');
@@ -723,30 +704,21 @@ function resolveEffectiveCaptain(capEl, vcEl, liveData, rawChip, teamMatchStatus
   const capMins = (liveData[capEl] && liveData[capEl].minutes) || 0;
   const capTeam = elementTeam[capEl];
   const capStatus = capTeam ? (teamMatchStatus[capTeam] || { noFixture: true }) : { noFixture: true };
-  if (capMins === 0 && (capStatus.noFixture || capStatus.kickedOff) && vcEl) {
-    return { el: vcEl, multiplier: 2, usedVC: true };
-  }
+  if (capMins === 0 && (capStatus.noFixture || capStatus.kickedOff) && vcEl) return { el: vcEl, multiplier: 2, usedVC: true };
   return { el: capEl, multiplier: 2, usedVC: false };
 }
 
 async function runUpdate(gw) {
   const [h2hRes, bootRes, liveRes, fixtureRes] = await Promise.all([
     fetchFPL(`leagues-h2h-matches/league/${LEAGUE_ID}/?event=${gw}`),
-    fetchFPL('bootstrap-static/'),
-    fetchFPL(`event/${gw}/live/`),
-    fetchFPL(`fixtures/?event=${gw}`)
+    fetchFPL('bootstrap-static/'), fetchFPL(`event/${gw}/live/`), fetchFPL(`fixtures/?event=${gw}`)
   ]);
   const netByEntry = {};
-  (h2hRes.results || []).forEach(m => {
-    netByEntry[m.entry_1_entry] = m.entry_1_points;
-    netByEntry[m.entry_2_entry] = m.entry_2_points;
-  });
+  (h2hRes.results || []).forEach(m => { netByEntry[m.entry_1_entry] = m.entry_1_points; netByEntry[m.entry_2_entry] = m.entry_2_points; });
   const elementName = {}, elementTeam = {};
   (bootRes.elements || []).forEach(el => { elementName[el.id] = el.web_name; elementTeam[el.id] = el.team; });
   const liveData = {};
-  (liveRes.elements || []).forEach(e => {
-    liveData[e.id] = { points: (e.stats && e.stats.total_points) || 0, minutes: (e.stats && e.stats.minutes) || 0 };
-  });
+  (liveRes.elements || []).forEach(e => { liveData[e.id] = { points: (e.stats && e.stats.total_points) || 0, minutes: (e.stats && e.stats.minutes) || 0 }; });
   const now = new Date();
   const teamMatchStatus = {};
   (fixtureRes || []).forEach(f => {
@@ -755,8 +727,7 @@ async function runUpdate(gw) {
     const s = { kickedOff: mins >= 20, finished: f.finished || false, noFixture: false };
     teamMatchStatus[f.team_h] = s; teamMatchStatus[f.team_a] = s;
   });
-  const players = Object.keys(PLAYER_MAP);
-  const picksData = await Promise.all(players.map(async name => {
+  const picksData = await Promise.all(Object.keys(PLAYER_MAP).map(async name => {
     try { return { name, entryId: PLAYER_MAP[name], data: await fetchFPL(`entry/${PLAYER_MAP[name]}/event/${gw}/picks/`) }; }
     catch(e) { return { name, entryId: PLAYER_MAP[name], data: null }; }
   }));
@@ -784,10 +755,8 @@ async function runUpdate(gw) {
     const h2hp = calcH2H(h2hRes.results || [], entryId);
     const prev = prevByEntry[Number(entryId)];
     weeklyRows.push({
-      gw, player_name: name, entry_id: entryId,
-      gross_points: gross, net_points: net,
-      league_penalty: lp, h2h_penalty: h2hp,
-      total_penalty: lp + h2hp,
+      gw, player_name: name, entry_id: entryId, gross_points: gross, net_points: net,
+      league_penalty: lp, h2h_penalty: h2hp, total_penalty: lp + h2hp,
       cumul_penalty: (prev ? prev.cumul_penalty : 0) + lp + h2hp,
       cumul_net_points: (prev ? prev.cumul_net_points : 0) + net,
       updated_at: new Date().toISOString()
@@ -795,12 +764,12 @@ async function runUpdate(gw) {
     const capEl = capElByEntry[entryId], vcEl = vcElByEntry[entryId];
     const rawChip = rawChipByEntry[entryId] || '';
     if (capEl) {
-      const effective = resolveEffectiveCaptain(capEl, vcEl, liveData, rawChip, teamMatchStatus, elementTeam);
-      const rawPts = (liveData[effective.el] && liveData[effective.el].points) || 0;
+      const eff = resolveEffectiveCaptain(capEl, vcEl, liveData, rawChip, teamMatchStatus, elementTeam);
+      const rawPts = (liveData[eff.el] && liveData[eff.el].points) || 0;
       capRows.push({
         gw, player_name: name, entry_id: entryId,
-        captain: (elementName[effective.el] || effective.el) + (effective.usedVC ? ' (VC)' : ''),
-        captain_pts: rawPts * effective.multiplier,
+        captain: (elementName[eff.el] || eff.el) + (eff.usedVC ? ' (VC)' : ''),
+        captain_pts: rawPts * eff.multiplier, // 已乘 x2 或 x3
         cap_ok: rawPts >= 4 ? 1 : 0,
         chip: rawChip, updated_at: new Date().toISOString()
       });
@@ -821,8 +790,7 @@ function calcH2H(matches, entryId) {
 
 function setStatus(msg, type) {
   const el = document.getElementById('admin-status');
-  el.textContent = msg;
-  el.className = 'status-msg ' + type;
+  el.textContent = msg; el.className = 'status-msg ' + type;
 }
 
 loadData();
