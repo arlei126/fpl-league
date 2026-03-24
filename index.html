@@ -72,6 +72,7 @@
   .player-card-pts.negative { color: #f85149; }
   .player-card-badge { font-size: 9px; padding: 2px 4px; background: #ffd700; color: #000; font-weight: 700; }
   .player-card-badge.vc-badge-card { background: #c0c0c0; }
+  .player-card-badge-spacer { height: 18px; }
   .squad-loading { color: #8b949e; font-size: 13px; padding: 20px; text-align: center; }
   .admin-panel { display: none; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
   .admin-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
@@ -101,15 +102,17 @@
  
   /* ===== 手機版陣容卡片 ===== */
   @media (max-width: 700px) {
-    .squad-container { padding: 10px; }
-    .squad-grid { gap: 4px; margin-bottom: 10px; }
-    .player-card { width: 58px; border-radius: 6px; }
-    .player-card-shirt { padding: 4px 0 2px; height: 38px; }
-    .player-card-shirt img { height: 30px; }
-    .player-card-shirt-fallback { font-size: 20px; }
-    .player-card-name { font-size: 8px; padding: 2px 2px 1px; }
-    .player-card-pts { font-size: 11px; padding: 1px 2px 2px; }
-    .player-card-badge { font-size: 7px; padding: 1px 3px; }
+    .squad-container { padding: 6px; }
+    .squad-section-label { font-size: 10px; margin-bottom: 4px; }
+    .squad-grid { gap: 3px; margin-bottom: 8px; display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); }
+    .player-card { width: auto; border-radius: 4px; }
+    .player-card-shirt { padding: 3px 0 1px; height: 32px; }
+    .player-card-shirt img { height: 26px; }
+    .player-card-shirt-fallback { font-size: 16px; }
+    .player-card-name { font-size: 7px; padding: 1px 1px 0; }
+    .player-card-pts { font-size: 10px; padding: 0 1px 1px; }
+    .player-card-badge { font-size: 6px; padding: 1px 2px; }
+    .player-card-badge-spacer { height: 12px; }
   }
 </style>
 </head>
@@ -350,7 +353,7 @@ function buildSquadHTML(picks, liveMap, isBench, usedVC, multiplier) {
     if (usedVC && isVC) cardClass += ' is-vc-active';
     if (isBench) cardClass += ' is-bench';
  
-    let badge = '<div style="height:18px"></div>';
+    let badge = '<div class="player-card-badge-spacer"></div>';
     if (!usedVC && isCap) {
       badge = `<div class="player-card-badge">© C</div>`;
     } else if (usedVC && isVC) {
