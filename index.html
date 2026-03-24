@@ -24,13 +24,11 @@
   .card-title { padding: 12px 16px; background: #1c2128; font-size: 14px; font-weight: 600; color: #58a6ff; border-bottom: 1px solid #30363d; }
   .overflow-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; }
-th { padding: 10px 14px; text-align: left; font-size: 12px; color: #8b949e; font-weight: 500; background: #1c2128; border-bottom: 1px solid #30363d; }
+  th { padding: 10px 14px; text-align: left; font-size: 12px; color: #8b949e; font-weight: 500; background: #1c2128; border-bottom: 1px solid #30363d; }
   th.col-important { font-weight: 500; }
-  td.col-important { font-weight: 700; }
   td { padding: 10px 14px; border-top: 1px solid #21262d; font-size: 13px; }
   td.col-important { font-weight: 700; }
   tr:hover td { background: #1c2128; }
-  /* Sticky 第一欄 */
   th:first-child { position: sticky; left: 0; z-index: 3; background: #1c2128; border-right: 1px solid #30363d; }
   td:first-child { position: sticky; left: 0; z-index: 2; background: #161b22; border-right: 1px solid #30363d; }
   tr:hover td:first-child { background: #1c2128; }
@@ -132,14 +130,9 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const ADMIN_PASSWORD = '1111';
 const LEAGUE_ID = 1406714;
 const PLAYER_MAP = {
-  "lai's_dream": 3818341,
-  "Legend Son": 879948,
-  "叒cap撚錯人": 10037,
-  "達蛇的最後探戈": 901186,
-  "和波照YEAH！": 1394163,
-  "Arne slot lalalalala": 3775889,
-  "利記海鮮": 5281742,
-  "來都來了": 6297083
+  "lai's_dream": 3818341, "Legend Son": 879948, "叒cap撚錯人": 10037,
+  "達蛇的最後探戈": 901186, "和波照YEAH！": 1394163,
+  "Arne slot lalalalala": 3775889, "利記海鮮": 5281742, "來都來了": 6297083
 };
 const PLAYER_ORDER = Object.keys(PLAYER_MAP);
 const CHIP_TC_KEYS = ['triple_captain', '3xc'];
@@ -158,12 +151,11 @@ async function supabaseGet(table, query = '') {
 }
 
 async function supabaseUpsert(table, data) {
-  const conflictKey = table === 'cap_log' ? 'gw,entry_id' : 'gw,entry_id';
+  const conflictKey = 'gw,entry_id';
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=${conflictKey}`, {
     method: 'POST',
     headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`,
       'Content-Type': 'application/json',
       'Prefer': 'resolution=merge-duplicates,return=minimal'
     },
@@ -179,11 +171,7 @@ async function supabaseUpsert(table, data) {
 async function fetchFPL(path) {
   const res = await fetch(
     `https://ucwsinzfpvjzdeqncjqc.supabase.co/functions/v1/bright-processor?path=${encodeURIComponent(path)}`,
-    {
-      headers: {
-        'Authorization': `Bearer ${SUPABASE_KEY}`
-      }
-    }
+    { headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` } }
   );
   const text = await res.text();
   return JSON.parse(text);
@@ -264,6 +252,31 @@ function onGWSelect() {
   const gw = parseInt(document.getElementById('gw-select').value);
   if (!gw) { showSummary(); return; }
   showWeekly(gw);
+}
+
+function buildMatchStatusMap(fixtureData, elementTeam) {
+  const teamMatchStatus = {};
+  const now = new Date();
+  (fixtureData || []).forEach(f => {
+    if (!f.kickoff_time) return;
+    const mins = (now - new Date(f.kickoff_time)) / 60000;
+    const s = { kickedOff: mins >= 20, finished: f.finished || false, noFixture: false };
+    teamMatchStatus[f.team_h] = s;
+    teamMatchStatus[f.team_a] = s;
+  });
+  return { teamMatchStatus, elementTeam };
+}
+
+function resolveEffectiveCaptain(capEl, vcEl, liveData, rawChip, teamMatchStatus, elementTeam) {
+  const isTC = CHIP_TC_KEYS.includes(rawChip);
+  if (isTC) return { el: capEl, multiplier: 3, usedVC: false };
+  const capMins = (liveData[capEl] && liveData[capEl].minutes) || 0;
+  const capTeam = elementTeam[capEl];
+  const capStatus = capTeam ? (teamMatchStatus[capTeam] || { kickedOff: false, finished: false, noFixture: true }) : { noFixture: true };
+  if (capMins === 0 && (capStatus.noFixture || capStatus.kickedOff) && vcEl) {
+    return { el: vcEl, multiplier: 2, usedVC: true };
+  }
+  return { el: capEl, multiplier: 2, usedVC: false };
 }
 
 function showWeekly(gw) {
@@ -413,13 +426,15 @@ async function runUpdate(gw) {
     liveData[e.id] = { points: (e.stats && e.stats.total_points) || 0, minutes: (e.stats && e.stats.minutes) || 0 };
   });
 
+  // 建立賽事狀態 map，冇賽事 = noFixture = 自動用 VC
   const now = new Date();
-  const teamStatus = {};
+  const teamMatchStatus = {};
   (fixtureRes || []).forEach(f => {
     if (!f.kickoff_time) return;
     const mins = (now - new Date(f.kickoff_time)) / 60000;
-    const s = { kickedOff: mins >= 20, finished: f.finished || false };
-    teamStatus[f.team_h] = s; teamStatus[f.team_a] = s;
+    const s = { kickedOff: mins >= 20, finished: f.finished || false, noFixture: false };
+    teamMatchStatus[f.team_h] = s;
+    teamMatchStatus[f.team_a] = s;
   });
 
   const players = Object.keys(PLAYER_MAP);
@@ -467,18 +482,12 @@ async function runUpdate(gw) {
     const capEl = capElByEntry[entryId], vcEl = vcElByEntry[entryId];
     const rawChip = rawChipByEntry[entryId] || '';
     if (capEl) {
-      const isTC = CHIP_TC_KEYS.includes(rawChip);
-      let effEl = capEl, usedVC = false;
-      if (!isTC) {
-        const capMins = (liveData[capEl] && liveData[capEl].minutes) || 0;
-        const st = teamStatus[elementTeam[capEl]] || {};
-        if (capMins === 0 && st.kickedOff && vcEl) { effEl = vcEl; usedVC = true; }
-      }
-      const rawPts = (liveData[effEl] && liveData[effEl].points) || 0;
+      const effective = resolveEffectiveCaptain(capEl, vcEl, liveData, rawChip, teamMatchStatus, elementTeam);
+      const rawPts = (liveData[effective.el] && liveData[effective.el].points) || 0;
       capRows.push({
         gw, player_name: name, entry_id: entryId,
-        captain: (elementName[effEl] || effEl) + (usedVC ? ' (VC)' : ''),
-        captain_pts: rawPts * (isTC ? 3 : 2),
+        captain: (elementName[effective.el] || effective.el) + (effective.usedVC ? ' (VC)' : ''),
+        captain_pts: rawPts * effective.multiplier,
         cap_ok: rawPts >= 4 ? 1 : 0,
         chip: rawChip, updated_at: new Date().toISOString()
       });
