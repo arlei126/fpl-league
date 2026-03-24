@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>⚽️ 完季食大餐 🍽️🍻</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#161b22">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FPL罰款">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #0d1117; color: #e6edf3; font-family: -apple-system, sans-serif; }
@@ -18,10 +24,14 @@
   .gw-select { background: #21262d; border: 1px solid #30363d; color: #e6edf3; padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; }
   .back-btn { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
   .back-btn:hover { background: #30363d; }
+  .nav-tabs { display: flex; gap: 4px; margin-bottom: 20px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 4px; }
+  .nav-tab { flex: 1; text-align: center; padding: 8px 4px; cursor: pointer; color: #8b949e; border-radius: 6px; font-size: 13px; transition: all 0.2s; }
+  .nav-tab.active { background: #1f6feb; color: #fff; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
-  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; }
-  .card-title { padding: 12px 16px; background: #1c2128; font-size: 14px; font-weight: 600; color: #58a6ff; border-bottom: 1px solid #30363d; }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } .nav-tab { font-size: 11px; padding: 6px 2px; } }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+  .card-title { padding: 12px 16px; background: #1c2128; font-size: 14px; font-weight: 600; color: #58a6ff; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; }
+  .worst-gw-badge { background: #f85149; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
   .overflow-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; }
   th { padding: 10px 14px; text-align: left; font-size: 12px; color: #8b949e; font-weight: 500; background: #1c2128; border-bottom: 1px solid #30363d; }
@@ -52,6 +62,11 @@
   .admin-section-label { color: #8b949e; font-size: 12px; margin-bottom: 6px; }
   .divider { border-top: 1px solid #30363d; margin: 14px 0; }
   .loading { padding: 40px; text-align: center; color: #8b949e; }
+  .chart-container { padding: 20px; }
+  .auto-refresh-indicator { font-size: 11px; color: #3fb950; }
+  .chart-toggle { display: flex; gap: 8px; padding: 12px 16px; flex-wrap: wrap; }
+  .chart-toggle-btn { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 4px 12px; border-radius: 12px; cursor: pointer; font-size: 12px; }
+  .chart-toggle-btn.active { border-color: #1f6feb; color: #58a6ff; }
 </style>
 </head>
 <body>
@@ -59,6 +74,7 @@
 <div class="header">
   <h1>⚽️ 完季食大餐 🍽️🍻</h1>
   <div class="header-right">
+    <span class="auto-refresh-indicator" id="refresh-indicator"></span>
     <span class="last-updated" id="last-updated">載入中...</span>
     <button class="admin-toggle" onclick="toggleAdmin()">🔧 更新</button>
   </div>
@@ -88,15 +104,34 @@
     <div class="status-msg" id="admin-status"></div>
   </div>
 
-  <div class="gw-bar" id="gw-bar" style="display:none">
-    <span class="gw-bar-label">睇指定周：</span>
-    <select class="gw-select" id="gw-select" onchange="onGWSelect()">
-      <option value="">-- 揀 GW --</option>
-    </select>
-    <button class="back-btn" id="back-btn" onclick="showSummary()" style="display:none">← 返回總覽</button>
+  <!-- 主導航 -->
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="switchView('weekly')">📅 本周</div>
+    <div class="nav-tab" onclick="switchView('summary')">🏆 總覽</div>
+    <div class="nav-tab" onclick="switchView('chart')">📈 走勢</div>
   </div>
 
-  <div id="summary-view" style="display:none">
+  <!-- 本周 -->
+  <div id="view-weekly">
+    <div class="gw-bar" id="gw-bar" style="display:none">
+      <span class="gw-bar-label">睇指定周：</span>
+      <select class="gw-select" id="gw-select" onchange="onGWSelect()">
+        <option value="">-- 揀 GW --</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span id="weekly-title">最新 GW 詳情</span>
+        <span class="worst-gw-badge" id="worst-gw-badge" style="display:none"></span>
+      </div>
+      <div class="overflow-x">
+        <div id="weekly-table"><div class="loading">載入中...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 總覽 -->
+  <div id="view-summary" style="display:none">
     <div class="grid">
       <div class="card">
         <div class="card-title">💰 全季罰款排行</div>
@@ -111,13 +146,33 @@
         </div>
       </div>
     </div>
+    <div class="card">
+      <div class="card-title">😭 包尾次數排行</div>
+      <div class="overflow-x">
+        <div id="lastplace-table"><div class="loading">載入中...</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">💀 最衰周排行（整周罰款最多）</div>
+      <div class="overflow-x">
+        <div id="worstgw-table"><div class="loading">載入中...</div></div>
+      </div>
+    </div>
   </div>
 
-  <div id="weekly-view">
+  <!-- 走勢圖 -->
+  <div id="view-chart" style="display:none">
     <div class="card">
-      <div class="card-title" id="weekly-title">最新 GW 詳情</div>
-      <div class="overflow-x">
-        <div id="weekly-table"><div class="loading">載入中...</div></div>
+      <div class="card-title">📈 累積罰款走勢</div>
+      <div class="chart-toggle" id="chart-toggle"></div>
+      <div class="chart-container">
+        <canvas id="penalty-chart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📈 累積總分走勢</div>
+      <div class="chart-container">
+        <canvas id="points-chart"></canvas>
       </div>
     </div>
   </div>
@@ -135,6 +190,9 @@ const PLAYER_MAP = {
   "Arne slot lalalalala": 3775889, "利記海鮮": 5281742, "來都來了": 6297083
 };
 const PLAYER_ORDER = Object.keys(PLAYER_MAP);
+const PLAYER_COLORS = [
+  '#58a6ff','#3fb950','#f0883e','#bc8cff','#ff7b72','#ffa657','#79c0ff','#56d364'
+];
 const CHIP_TC_KEYS = ['triple_captain', '3xc'];
 const CHIP_DISPLAY = {
   'triple_captain': '👑 TC', '3xc': '👑 TC',
@@ -142,6 +200,11 @@ const CHIP_DISPLAY = {
 };
 
 let allResults = [], allCapLog = [], latestGW = null;
+let penaltyChart = null, pointsChart = null;
+let activeView = 'weekly';
+let currentGW = null;
+let autoRefreshTimer = null;
+let refreshCountdown = 300;
 
 async function supabaseGet(table, query = '') {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
@@ -151,8 +214,7 @@ async function supabaseGet(table, query = '') {
 }
 
 async function supabaseUpsert(table, data) {
-  const conflictKey = 'gw,entry_id';
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=${conflictKey}`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=gw,entry_id`, {
     method: 'POST',
     headers: {
       'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`,
@@ -161,10 +223,7 @@ async function supabaseUpsert(table, data) {
     },
     body: JSON.stringify(data)
   });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Supabase 寫入失敗：${err}`);
-  }
+  if (!res.ok) { const err = await res.text(); throw new Error(`Supabase 寫入失敗：${err}`); }
   return true;
 }
 
@@ -186,18 +245,39 @@ async function loadData() {
   const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
   if (gws.length > 0) {
     latestGW = gws[gws.length - 1];
+    if (!currentGW) currentGW = latestGW;
     const sel = document.getElementById('gw-select');
-    sel.innerHTML = '<option value="">-- 揀 GW --</option>' + gws.map(g => `<option value="${g}">GW${g}</option>`).join('');
+    sel.innerHTML = '<option value="">-- 揀 GW --</option>' + gws.map(g => `<option value="${g}" ${g === currentGW ? 'selected' : ''}>GW${g}</option>`).join('');
     document.getElementById('gw-bar').style.display = 'flex';
     const latest = allResults.reduce((a,b) => a.updated_at > b.updated_at ? a : b, allResults[0]);
-    document.getElementById('last-updated').textContent = `最後更新：GW${latestGW} · ${new Date(latest.updated_at).toLocaleDateString('zh-HK')}`;
-    showWeekly(latestGW);
+    document.getElementById('last-updated').textContent = `更新：${new Date(latest.updated_at).toLocaleTimeString('zh-HK')}`;
   } else {
     document.getElementById('last-updated').textContent = '未有數據';
-    document.getElementById('weekly-table').innerHTML = '<div class="loading">未有數據，請在管理頁面更新</div>';
   }
+
+  renderWeekly(currentGW || latestGW);
   renderSummaryTable();
   renderCaptainTable();
+  renderLastPlaceTable();
+  renderWorstGWTable();
+  renderCharts();
+  startAutoRefresh();
+}
+
+// 自動更新
+function startAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  refreshCountdown = 300;
+  autoRefreshTimer = setInterval(async () => {
+    refreshCountdown--;
+    if (refreshCountdown <= 0) {
+      document.getElementById('refresh-indicator').textContent = '🔄';
+      await loadData();
+      refreshCountdown = 300;
+    } else {
+      document.getElementById('refresh-indicator').textContent = `⏱ ${refreshCountdown}s`;
+    }
+  }, 1000);
 }
 
 function renderSummaryTable() {
@@ -207,17 +287,12 @@ function renderSummaryTable() {
     return { name, penalty: latest ? latest.cumul_penalty : 0, pts: latest ? latest.cumul_net_points : 0 };
   }).sort((a,b) => a.penalty - b.penalty);
 
-  if (!data.some(d => d.pts > 0)) {
-    document.getElementById('summary-table').innerHTML = '<div class="loading">未有數據</div>'; return;
-  }
+  if (!data.some(d => d.pts > 0)) { document.getElementById('summary-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
   let html = '<table><tr><th>#</th><th>玩家</th><th class="col-important">累積罰款</th><th class="col-important">累積總分</th></tr>';
   data.forEach((p, i) => {
-    html += `<tr>
-      <td class="rank-num">${i+1}</td>
-      <td><strong>${p.name}</strong></td>
+    html += `<tr><td class="rank-num">${i+1}</td><td><strong>${p.name}</strong></td>
       <td class="col-important">${p.penalty < 0 ? `-$${Math.abs(p.penalty)}` : '$0'}</td>
-      <td class="col-important">${p.pts}</td>
-    </tr>`;
+      <td class="col-important">${p.pts}</td></tr>`;
   });
   html += '</table>';
   document.getElementById('summary-table').innerHTML = html;
@@ -232,58 +307,95 @@ function renderCaptainTable() {
     return { name, totalPts, ok, total, rate: total > 0 ? (ok/total*100).toFixed(0) : 0 };
   }).sort((a,b) => b.totalPts - a.totalPts);
 
-  if (!data.some(d => d.total > 0)) {
-    document.getElementById('captain-table').innerHTML = '<div class="loading">未有數據</div>'; return;
-  }
+  if (!data.some(d => d.total > 0)) { document.getElementById('captain-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
   let html = '<table><tr><th>#</th><th>玩家</th><th class="col-important">Cap 總分</th><th>成功率</th></tr>';
   data.forEach((p, i) => {
-    html += `<tr>
-      <td class="rank-num">${i+1}</td>
-      <td><strong>${p.name}</strong></td>
+    html += `<tr><td class="rank-num">${i+1}</td><td><strong>${p.name}</strong></td>
       <td class="col-important"><strong>${p.totalPts}</strong></td>
-      <td>${p.rate}% (${p.ok}/${p.total})</td>
-    </tr>`;
+      <td>${p.rate}% (${p.ok}/${p.total})</td></tr>`;
   });
   html += '</table>';
   document.getElementById('captain-table').innerHTML = html;
 }
 
-function onGWSelect() {
-  const gw = parseInt(document.getElementById('gw-select').value);
-  if (!gw) { showSummary(); return; }
-  showWeekly(gw);
-}
+// 包尾次數排行
+function renderLastPlaceTable() {
+  const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
+  const lastPlaceCount = {};
+  PLAYER_ORDER.forEach(name => lastPlaceCount[name] = 0);
 
-function buildMatchStatusMap(fixtureData, elementTeam) {
-  const teamMatchStatus = {};
-  const now = new Date();
-  (fixtureData || []).forEach(f => {
-    if (!f.kickoff_time) return;
-    const mins = (now - new Date(f.kickoff_time)) / 60000;
-    const s = { kickedOff: mins >= 20, finished: f.finished || false, noFixture: false };
-    teamMatchStatus[f.team_h] = s;
-    teamMatchStatus[f.team_a] = s;
+  gws.forEach(gw => {
+    const gwData = allResults.filter(r => r.gw === gw);
+    if (!gwData.length) return;
+    const minPts = Math.min(...gwData.map(r => r.gross_points));
+    gwData.filter(r => r.gross_points === minPts).forEach(r => {
+      if (lastPlaceCount[r.player_name] !== undefined) lastPlaceCount[r.player_name]++;
+    });
   });
-  return { teamMatchStatus, elementTeam };
+
+  const data = PLAYER_ORDER.map(name => ({ name, count: lastPlaceCount[name] || 0 }))
+    .sort((a,b) => b.count - a.count);
+
+  let html = '<table><tr><th>#</th><th>玩家</th><th>包尾次數</th><th>罰款</th></tr>';
+  data.forEach((p, i) => {
+    html += `<tr><td class="rank-num">${i+1}</td><td><strong>${p.name}</strong></td>
+      <td>${p.count} 次</td><td>-$${p.count * 20}</td></tr>`;
+  });
+  html += '</table>';
+  document.getElementById('lastplace-table').innerHTML = html;
 }
 
-function resolveEffectiveCaptain(capEl, vcEl, liveData, rawChip, teamMatchStatus, elementTeam) {
-  const isTC = CHIP_TC_KEYS.includes(rawChip);
-  if (isTC) return { el: capEl, multiplier: 3, usedVC: false };
-  const capMins = (liveData[capEl] && liveData[capEl].minutes) || 0;
-  const capTeam = elementTeam[capEl];
-  const capStatus = capTeam ? (teamMatchStatus[capTeam] || { kickedOff: false, finished: false, noFixture: true }) : { noFixture: true };
-  if (capMins === 0 && (capStatus.noFixture || capStatus.kickedOff) && vcEl) {
-    return { el: vcEl, multiplier: 2, usedVC: true };
+// 最衰周排行
+function renderWorstGWTable() {
+  const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
+  const gwTotals = gws.map(gw => {
+    const gwData = allResults.filter(r => r.gw === gw);
+    const totalPenalty = gwData.reduce((s,r) => s + Math.abs(r.total_penalty), 0);
+    return { gw, totalPenalty, playerCount: gwData.filter(r => r.total_penalty < 0).length };
+  }).sort((a,b) => b.totalPenalty - a.totalPenalty);
+
+  if (!gwTotals.length) { document.getElementById('worstgw-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
+
+  // 更新最衰周 badge
+  const worstGW = gwTotals[0];
+  if (currentGW === worstGW.gw) {
+    document.getElementById('worst-gw-badge').style.display = 'inline';
+    document.getElementById('worst-gw-badge').textContent = '💀 最衰周';
+  } else {
+    document.getElementById('worst-gw-badge').style.display = 'none';
   }
-  return { el: capEl, multiplier: 2, usedVC: false };
+
+  let html = '<table><tr><th>#</th><th>GW</th><th>總罰款</th><th>受罰人數</th></tr>';
+  gwTotals.slice(0, 10).forEach((g, i) => {
+    const isWorst = i === 0;
+    html += `<tr ${isWorst ? 'style="background:#2d1515"' : ''}>
+      <td class="rank-num">${i+1}${isWorst ? ' 💀' : ''}</td>
+      <td><strong>GW${g.gw}</strong></td>
+      <td>-$${g.totalPenalty}</td>
+      <td>${g.playerCount} 人</td></tr>`;
+  });
+  html += '</table>';
+  document.getElementById('worstgw-table').innerHTML = html;
 }
 
-function showWeekly(gw) {
-  document.getElementById('summary-view').style.display = 'none';
-  document.getElementById('weekly-view').style.display = 'block';
-  document.getElementById('back-btn').style.display = 'none';
+function renderWeekly(gw) {
+  if (!gw) return;
+  currentGW = gw;
   document.getElementById('weekly-title').textContent = `GW${gw} 詳情`;
+
+  // 檢查係咪最衰周
+  const gws = [...new Set(allResults.map(r => r.gw))];
+  const gwTotals = gws.map(g => {
+    const gwData = allResults.filter(r => r.gw === g);
+    return { gw: g, total: gwData.reduce((s,r) => s + Math.abs(r.total_penalty), 0) };
+  }).sort((a,b) => b.total - a.total);
+
+  if (gwTotals.length && gwTotals[0].gw === gw) {
+    document.getElementById('worst-gw-badge').style.display = 'inline';
+    document.getElementById('worst-gw-badge').textContent = '💀 最衰周';
+  } else {
+    document.getElementById('worst-gw-badge').style.display = 'none';
+  }
 
   const gwResults = allResults.filter(r => r.gw === gw);
   const caps = allCapLog.filter(r => r.gw === gw);
@@ -337,11 +449,86 @@ function showWeekly(gw) {
   document.getElementById('weekly-table').innerHTML = html;
 }
 
-function showSummary() {
-  document.getElementById('summary-view').style.display = 'block';
-  document.getElementById('weekly-view').style.display = 'none';
-  document.getElementById('back-btn').style.display = 'none';
-  document.getElementById('gw-select').value = '';
+// 走勢圖
+function renderCharts() {
+  const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
+  if (!gws.length) return;
+
+  const labels = gws.map(g => `GW${g}`);
+
+  // 累積罰款走勢
+  const penaltyDatasets = PLAYER_ORDER.map((name, i) => {
+    const data = gws.map(gw => {
+      const row = allResults.find(r => r.player_name === name && r.gw === gw);
+      return row ? row.cumul_penalty : null;
+    });
+    return {
+      label: name,
+      data,
+      borderColor: PLAYER_COLORS[i],
+      backgroundColor: PLAYER_COLORS[i] + '20',
+      tension: 0.3,
+      pointRadius: 3,
+      borderWidth: 2
+    };
+  });
+
+  // 累積總分走勢
+  const pointsDatasets = PLAYER_ORDER.map((name, i) => {
+    const data = gws.map(gw => {
+      const row = allResults.find(r => r.player_name === name && r.gw === gw);
+      return row ? row.cumul_net_points : null;
+    });
+    return {
+      label: name,
+      data,
+      borderColor: PLAYER_COLORS[i],
+      backgroundColor: PLAYER_COLORS[i] + '20',
+      tension: 0.3,
+      pointRadius: 3,
+      borderWidth: 2
+    };
+  });
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: { position: 'bottom', labels: { color: '#8b949e', font: { size: 11 }, boxWidth: 12 } }
+    },
+    scales: {
+      x: { ticks: { color: '#8b949e', font: { size: 11 } }, grid: { color: '#21262d' } },
+      y: { ticks: { color: '#8b949e', font: { size: 11 } }, grid: { color: '#21262d' } }
+    }
+  };
+
+  if (penaltyChart) penaltyChart.destroy();
+  penaltyChart = new Chart(document.getElementById('penalty-chart'), {
+    type: 'line',
+    data: { labels, datasets: penaltyDatasets },
+    options: { ...chartOptions, plugins: { ...chartOptions.plugins } }
+  });
+
+  if (pointsChart) pointsChart.destroy();
+  pointsChart = new Chart(document.getElementById('points-chart'), {
+    type: 'line',
+    data: { labels, datasets: pointsDatasets },
+    options: { ...chartOptions }
+  });
+}
+
+function switchView(view) {
+  activeView = view;
+  ['weekly','summary','chart'].forEach(v => {
+    document.getElementById(`view-${v}`).style.display = v === view ? 'block' : 'none';
+  });
+  document.querySelectorAll('.nav-tab').forEach((tab, i) => {
+    tab.classList.toggle('active', ['weekly','summary','chart'][i] === view);
+  });
+}
+
+function onGWSelect() {
+  const gw = parseInt(document.getElementById('gw-select').value);
+  if (gw) renderWeekly(gw);
 }
 
 function toggleAdmin() {
@@ -404,6 +591,18 @@ async function batchUpdate() {
   setAllDisabled(false);
 }
 
+function resolveEffectiveCaptain(capEl, vcEl, liveData, rawChip, teamMatchStatus, elementTeam) {
+  const isTC = CHIP_TC_KEYS.includes(rawChip);
+  if (isTC) return { el: capEl, multiplier: 3, usedVC: false };
+  const capMins = (liveData[capEl] && liveData[capEl].minutes) || 0;
+  const capTeam = elementTeam[capEl];
+  const capStatus = capTeam ? (teamMatchStatus[capTeam] || { noFixture: true }) : { noFixture: true };
+  if (capMins === 0 && (capStatus.noFixture || capStatus.kickedOff) && vcEl) {
+    return { el: vcEl, multiplier: 2, usedVC: true };
+  }
+  return { el: capEl, multiplier: 2, usedVC: false };
+}
+
 async function runUpdate(gw) {
   const [h2hRes, bootRes, liveRes, fixtureRes] = await Promise.all([
     fetchFPL(`leagues-h2h-matches/league/${LEAGUE_ID}/?event=${gw}`),
@@ -426,15 +625,13 @@ async function runUpdate(gw) {
     liveData[e.id] = { points: (e.stats && e.stats.total_points) || 0, minutes: (e.stats && e.stats.minutes) || 0 };
   });
 
-  // 建立賽事狀態 map，冇賽事 = noFixture = 自動用 VC
   const now = new Date();
   const teamMatchStatus = {};
   (fixtureRes || []).forEach(f => {
     if (!f.kickoff_time) return;
     const mins = (now - new Date(f.kickoff_time)) / 60000;
     const s = { kickedOff: mins >= 20, finished: f.finished || false, noFixture: false };
-    teamMatchStatus[f.team_h] = s;
-    teamMatchStatus[f.team_a] = s;
+    teamMatchStatus[f.team_h] = s; teamMatchStatus[f.team_a] = s;
   });
 
   const players = Object.keys(PLAYER_MAP);
