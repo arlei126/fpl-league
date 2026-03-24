@@ -26,7 +26,7 @@
   .nav-tab { flex: 1; text-align: center; padding: 8px 4px; cursor: pointer; color: #8b949e; border-radius: 6px; font-size: 13px; transition: all 0.2s; }
   .nav-tab.active { background: #1f6feb; color: #fff; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } .nav-tab { font-size: 11px; padding: 6px 2px; } .desk-only { display: none !important; } th { padding: 5px 4px; font-size: 10px; } td { padding: 5px 4px; font-size: 11px; } table { width: 100%; min-width: auto; } td:first-child { position: static; border-right: none; } th:first-child { left: auto; border-right: none; } }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } .nav-tab { font-size: 11px; padding: 6px 2px; } .desk-only { display: none !important; } th { padding: 5px 4px; font-size: 10px; } td { padding: 5px 4px; font-size: 11px; } table { width: 100%; min-width: auto; } td:first-child { position: static; border-right: none; } th:first-child { left: auto; border-right: none; } .rank-inline { font-size: 10px; margin-right: 2px; } .move-up, .move-down, .move-same { font-size: 8px; margin-right: 2px; } .chip-badge { font-size: 7px; margin-left: 2px; } .expand-icon { font-size: 9px; margin-left: 2px; } }
   .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
   .card-title { padding: 12px 16px; background: #1c2128; font-size: 14px; font-weight: 600; color: #58a6ff; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; }
   .worst-gw-badge { background: #f85149; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
@@ -43,17 +43,21 @@
   tr.data-row:hover td:first-child { background: #1c2128; }
   tr.data-row.expanded td:first-child { background: #1c2128; }
   .last-place td { background: #4a0000 !important; }
-  .last-place td:first-child { background: #4a0000 !important; border-left: 4px solid #f85149; }
+  .last-place td:first-child { background: #4a0000 !important; border-left: 3px solid #f85149; padding-left: 5px; }
   .low-score td { background: #2d2b10 !important; }
   .low-score td:first-child { background: #2d2b10 !important; }
   .rank-num { color: #8b949e; }
+  .rank-inline { color: #8b949e; font-size: 12px; font-weight: 700; margin-right: 3px; }
+  .move-up { color: #3fb950; font-size: 10px; margin-right: 3px; }
+  .move-down { color: #f85149; font-size: 10px; margin-right: 3px; }
+  .move-same { color: #484f58; font-size: 10px; margin-right: 3px; }
+  .chip-badge { font-size: 9px; margin-left: 4px; opacity: 0.85; }
   .vc-badge { color: #f0883e; font-size: 11px; margin-left: 3px; }
   .cap-ok { color: #3fb950; font-weight: 600; }
   .cap-fail { color: #f0883e; font-weight: 600; }
   .player-link { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
   .player-link:hover { color: #58a6ff; }
-  .expand-icon { color: #8b949e; font-size: 11px; margin-left: 6px; transition: transform 0.2s; display: inline-block; }
-  tr.data-row.expanded .expand-icon { transform: rotate(180deg); }
+  .expand-icon { color: #8b949e; font-size: 11px; margin-left: 4px; letter-spacing: -1px; }
   tr.squad-row td { padding: 0; border-top: none; background: #0d1117 !important; }
   tr.squad-row td:first-child { background: #0d1117 !important; border-right: none; position: static; }
   .squad-container { padding: 16px; border-top: 1px solid #30363d; }
@@ -328,7 +332,7 @@ function shirtImg(teamCode, isBench) {
 
 // multiplier: 2 (normal) or 3 (TC)
 // usedVC: true = VC 被用做有效隊長
-function buildSquadHTML(picks, liveMap, isBench, usedVC, multiplier) {
+function buildSquadHTML(picks, liveMap, isBench, usedVC, multiplier, isBB) {
   return picks.map(p => {
     const el = elementData[p.element] || { name: `#${p.element}`, pos: 1, teamCode: 0 };
     const rawPts = liveMap[p.element] !== undefined ? liveMap[p.element] : null;
@@ -352,7 +356,7 @@ function buildSquadHTML(picks, liveMap, isBench, usedVC, multiplier) {
     let cardClass = 'player-card';
     if (!usedVC && isCap) cardClass += ' is-captain';
     if (usedVC && isVC) cardClass += ' is-vc-active';
-    if (isBench) cardClass += ' is-bench';
+    if (isBench && !isBB) cardClass += ' is-bench';
 
     let badge = '<div class="player-card-badge-spacer"></div>';
     if (!usedVC && isCap) {
@@ -362,7 +366,7 @@ function buildSquadHTML(picks, liveMap, isBench, usedVC, multiplier) {
     }
 
     return `<div class="${cardClass}">
-      <div class="player-card-shirt">${shirtImg(el.teamCode, isBench)}</div>
+      <div class="player-card-shirt">${shirtImg(el.teamCode, isBench && !isBB)}</div>
       <div class="player-card-name">${el.name}</div>
       <div class="player-card-pts ${ptsClass}">${displayPts}</div>
       ${badge}
@@ -394,14 +398,16 @@ async function toggleSquad(entryId, gw, usedVC) {
   const chipRaw = capEntry ? (capEntry.chip || '') : '';
   const multiplier = CHIP_TC_KEYS.includes(chipRaw) ? 3 : 2;
 
+  const isBB = chipRaw === 'bboost';
+
   function renderSquadContent(picks, liveMap) {
     const starters = picks.filter(p => p.position <= 11);
     const bench = picks.filter(p => p.position > 11);
     return `
       <div class="squad-section-label">正選</div>
-      <div class="squad-grid">${buildSquadHTML(starters, liveMap, false, usedVC, multiplier)}</div>
+      <div class="squad-grid">${buildSquadHTML(starters, liveMap, false, usedVC, multiplier, isBB)}</div>
       <div class="squad-section-label">後備</div>
-      <div class="squad-grid">${buildSquadHTML(bench, liveMap, true, usedVC, multiplier)}</div>
+      <div class="squad-grid">${buildSquadHTML(bench, liveMap, true, usedVC, multiplier, isBB)}</div>
     `;
   }
 
@@ -520,18 +526,39 @@ function renderWeekly(gw) {
   const minPts = Math.min(...gwResults.map(r => r.gross_points));
   const data = [...gwResults].sort((a,b) => b.cumul_net_points - a.cumul_net_points);
 
+  // 計算上周排名
+  const prevGW = gw - 1;
+  const prevGWResults = allResults.filter(r => r.gw === prevGW);
+  const prevRanks = {};
+  if (prevGWResults.length) {
+    [...prevGWResults].sort((a,b) => b.cumul_net_points - a.cumul_net_points).forEach((r, i) => {
+      prevRanks[r.player_name] = i + 1;
+    });
+  }
+
   const tableEl = document.createElement('table');
   tableEl.innerHTML = '<tr><th>玩家</th><th>今周分</th><th class="desk-only">League罰款</th><th class="desk-only">H2H罰款</th><th class="col-important">今周$$$$</th><th class="col-important">累積罰款</th><th class="col-important desk-only">累積總分</th><th class="desk-only">隊長</th><th class="desk-only">今周Cap分</th><th class="desk-only">累積Cap分</th><th class="desk-only">成功率</th><th class="desk-only">Chip</th></tr>';
 
-  data.forEach(r => {
+  data.forEach((r, idx) => {
+    const rank = idx + 1;
     const cap = caps.find(c => Number(c.entry_id) === Number(r.entry_id));
     const isLast = r.gross_points === minPts;
     const isLow = r.gross_points < 45 && !isLast;
     const entryId = PLAYER_MAP[r.player_name];
 
+    // 排名升跌
+    let moveHtml = '';
+    if (prevRanks[r.player_name]) {
+      const diff = prevRanks[r.player_name] - rank;
+      if (diff > 0) moveHtml = `<span class="move-up">▲</span>`;
+      else if (diff < 0) moveHtml = `<span class="move-down">▼</span>`;
+      else moveHtml = `<span class="move-same">─</span>`;
+    }
+
     const usedVC = cap && cap.captain && cap.captain.includes('(VC)');
     const capDisplayName = cap ? cap.captain.replace(' (VC)', '') : '-';
     const chip = cap ? (CHIP_DISPLAY[cap.chip] || '') : '';
+    const chipHtml = chip ? `<span class="chip-badge">${chip}</span>` : '';
     const capPts = cap ? cap.captain_pts : '-';
     const capOK = cap ? cap.cap_ok : null;
 
@@ -554,7 +581,7 @@ function renderWeekly(gw) {
     tr.dataset.entry = entryId;
     tr.dataset.gw = gw;
     tr.innerHTML = `
-      <td><strong class="player-link" data-name="${r.player_name}">${r.player_name}</strong> <span class="expand-icon">▼</span></td>
+      <td><span class="rank-inline">${rank}</span>${moveHtml}<strong class="player-link" data-name="${r.player_name}">${r.player_name}</strong>${chipHtml} <span class="expand-icon">⋯</span></td>
       <td>${r.gross_points}</td>
       <td class="desk-only">${fmt(r.league_penalty)}</td>
       <td class="desk-only">${fmt(r.h2h_penalty)}</td>
