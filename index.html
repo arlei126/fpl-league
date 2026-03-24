@@ -26,7 +26,7 @@
   .nav-tab { flex: 1; text-align: center; padding: 8px 4px; cursor: pointer; color: #8b949e; border-radius: 6px; font-size: 13px; transition: all 0.2s; }
   .nav-tab.active { background: #1f6feb; color: #fff; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } .nav-tab { font-size: 11px; padding: 6px 2px; } .desk-only { display: none !important; } .chip-badge.mob-only { display: inline !important; } th { padding: 5px 4px; font-size: 10px; } td { padding: 5px 4px; font-size: 11px; } table { width: 100%; min-width: auto; } td:first-child { position: static; border-right: none; } th:first-child { left: auto; border-right: none; } .rank-inline { font-size: 10px; } .move-up { border-left-width: 3px; border-right-width: 3px; border-bottom-width: 4px; } .move-down { border-left-width: 3px; border-right-width: 3px; border-top-width: 4px; } .move-same { width: 4px; height: 4px; } .chip-badge { font-size: 7px; margin-left: 2px; } }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } .nav-tab { font-size: 11px; padding: 6px 2px; } .desk-only { display: none !important; } .chip-badge.mob-only { display: inline !important; } .desk-label { display: none !important; } .mob-label { display: inline !important; } th { padding: 5px 4px; font-size: 10px; } td { padding: 5px 4px; font-size: 11px; } table { width: 100%; min-width: auto; } td:first-child { position: static; border-right: none; } th:first-child { left: auto; border-right: none; } .rank-inline { font-size: 10px; } .move-up, .move-down, .move-same { font-size: 0; } .move-up { width: 0; height: 0; border-left: 3px solid transparent; border-right: 3px solid transparent; border-bottom: 4px solid #3fb950; } .move-down { width: 0; height: 0; border-left: 3px solid transparent; border-right: 3px solid transparent; border-top: 4px solid #f85149; } .move-same { width: 4px; height: 4px; border-radius: 50%; background: #58a6ff; } .chip-badge { font-size: 7px; margin-left: 2px; } .sort-arrow { font-size: 7px; margin-left: 1px; } }
   .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
   .card-title { padding: 12px 16px; background: #1c2128; font-size: 14px; font-weight: 600; color: #58a6ff; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; }
   .worst-gw-badge { background: #f85149; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
@@ -49,12 +49,16 @@
   td:first-child { border-left: 3px solid transparent; }
   .rank-num { color: #8b949e; }
   .rank-inline { color: #8b949e; font-size: 12px; font-weight: 700; margin-right: 2px; }
-  .move-up, .move-down, .move-same { display: inline-block; margin-right: 2px; vertical-align: middle; }
-  .move-up { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 5px solid #3fb950; }
-  .move-down { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid #f85149; }
-  .move-same { width: 5px; height: 5px; border-radius: 50%; background: #58a6ff; }
+  .move-up, .move-down, .move-same { display: inline-block; margin-right: 2px; vertical-align: middle; line-height: 1; }
+  .move-up { color: #3fb950; font-size: 10px; }
+  .move-down { color: #f85149; font-size: 10px; }
+  .move-same { width: 6px; height: 6px; border-radius: 50%; background: #58a6ff; }
   .chip-badge { font-size: 9px; margin-left: 4px; opacity: 0.85; }
   .chip-badge.mob-only { display: none; }
+  .mob-label { display: none; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: #e6edf3; }
+  .sort-arrow { font-size: 9px; margin-left: 2px; color: #58a6ff; }
   .vc-badge { color: #f0883e; font-size: 11px; margin-left: 3px; }
   .cap-ok { color: #3fb950; font-weight: 600; }
   .cap-fail { color: #f0883e; font-weight: 600; }
@@ -108,18 +112,18 @@
 
   /* ===== 手機版陣容卡片 ===== */
   @media (max-width: 700px) {
-    .squad-container { padding: 4px; width: 100%; max-width: 100%; overflow: hidden; box-sizing: border-box; display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 2px; }
+    .squad-container { padding: 3px; width: 100%; max-width: 100%; overflow: hidden; box-sizing: border-box; display: grid; grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); gap: 2px; }
     .squad-section-label { display: none; }
     .squad-grid { display: contents; }
     .player-card { width: auto; border-radius: 3px; border-width: 1px; }
     .player-card.is-bench { opacity: 0.45; }
-    .player-card-shirt { padding: 2px 0 1px; height: 26px; }
-    .player-card-shirt img { height: 20px; }
-    .player-card-shirt-fallback { font-size: 13px; }
-    .player-card-name { font-size: 6px; padding: 1px 1px 0; white-space: nowrap; height: auto; display: block; }
-    .player-card-pts { font-size: 8px; padding: 0 1px 1px; }
-    .player-card-badge { font-size: 5px; padding: 0 2px; }
-    .player-card-badge-spacer { height: 8px; }
+    .player-card-shirt { padding: 1px 0 1px; height: 22px; }
+    .player-card-shirt img { height: 17px; }
+    .player-card-shirt-fallback { font-size: 11px; }
+    .player-card-name { font-size: 5.5px; padding: 0 1px; white-space: nowrap; height: auto; display: block; }
+    .player-card-pts { font-size: 7.5px; padding: 0 1px 1px; }
+    .player-card-badge { font-size: 5px; padding: 0 1px; }
+    .player-card-badge-spacer { height: 7px; }
   }
 </style>
 </head>
@@ -241,6 +245,7 @@ let currentGW = null;
 let autoRefreshTimer = null, refreshCountdown = 300;
 let modalChart = null, currentModalPlayer = null, currentModalTab = 'penalty';
 let elementData = {};
+let currentSort = { key: 'cumul_net_points', dir: 'desc' };
 const squadCache = {};
 
 async function supabaseGet(table, query = '') {
@@ -526,11 +531,14 @@ function renderWeekly(gw) {
   if (!gwResults.length) { document.getElementById('weekly-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
 
   const minPts = Math.min(...gwResults.map(r => r.gross_points));
-  const data = [...gwResults].sort((a,b) => b.cumul_net_points - a.cumul_net_points);
 
-  // 計算上周排名
-  const prevGW = gw - 1;
-  const prevGWResults = allResults.filter(r => r.gw === prevGW);
+  // 排名永遠按累積總分
+  const ranked = [...gwResults].sort((a,b) => b.cumul_net_points - a.cumul_net_points);
+  const rankMap = {};
+  ranked.forEach((r, i) => { rankMap[r.player_name] = i + 1; });
+
+  // 上周排名
+  const prevGWResults = allResults.filter(r => r.gw === gw - 1);
   const prevRanks = {};
   if (prevGWResults.length) {
     [...prevGWResults].sort((a,b) => b.cumul_net_points - a.cumul_net_points).forEach((r, i) => {
@@ -538,22 +546,67 @@ function renderWeekly(gw) {
     });
   }
 
-  const tableEl = document.createElement('table');
-  tableEl.innerHTML = '<tr><th>玩家</th><th>今周分</th><th class="desk-only">League罰款</th><th class="desk-only">H2H罰款</th><th class="col-important">今周$$$$</th><th class="col-important">累積罰款</th><th class="col-important desk-only">累積總分</th><th class="desk-only">隊長</th><th class="desk-only">今周Cap分</th><th class="desk-only">累積Cap分</th><th class="desk-only">成功率</th><th class="desk-only">Chip</th></tr>';
+  // 顯示排序
+  const sortKey = currentSort.key;
+  const sortDir = currentSort.dir;
+  const data = [...gwResults].sort((a,b) => {
+    let va = a[sortKey], vb = b[sortKey];
+    if (typeof va === 'string') return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    return sortDir === 'asc' ? va - vb : vb - va;
+  });
 
-  data.forEach((r, idx) => {
-    const rank = idx + 1;
+  const sortArrow = (key) => {
+    if (currentSort.key !== key) return '';
+    return `<span class="sort-arrow">${currentSort.dir === 'asc' ? '▲' : '▼'}</span>`;
+  };
+
+  const tableEl = document.createElement('table');
+  const thead = document.createElement('tr');
+  const cols = [
+    { label: '玩家', mobLabel: '玩家', key: 'player_name', cls: '' },
+    { label: '今周分', mobLabel: 'PT', key: 'gross_points', cls: '' },
+    { label: 'League罰款', mobLabel: '', key: 'league_penalty', cls: 'desk-only' },
+    { label: 'H2H罰款', mobLabel: '', key: 'h2h_penalty', cls: 'desk-only' },
+    { label: '今周$$$$', mobLabel: '$$$', key: 'total_penalty', cls: 'col-important' },
+    { label: '累積罰款', mobLabel: 'Total', key: 'cumul_penalty', cls: 'col-important' },
+    { label: '累積總分', mobLabel: '', key: 'cumul_net_points', cls: 'col-important desk-only' },
+    { label: '隊長', mobLabel: '', key: null, cls: 'desk-only' },
+    { label: '今周Cap分', mobLabel: '', key: null, cls: 'desk-only' },
+    { label: '累積Cap分', mobLabel: '', key: null, cls: 'desk-only' },
+    { label: '成功率', mobLabel: '', key: null, cls: 'desk-only' },
+    { label: 'Chip', mobLabel: '', key: null, cls: 'desk-only' }
+  ];
+  cols.forEach(col => {
+    const th = document.createElement('th');
+    th.className = col.cls + (col.key ? ' sortable' : '');
+    if (col.mobLabel && col.mobLabel !== col.label) {
+      th.innerHTML = `<span class="desk-label">${col.label}</span><span class="mob-label">${col.mobLabel}</span>${sortArrow(col.key)}`;
+    } else {
+      th.innerHTML = `${col.label}${sortArrow(col.key)}`;
+    }
+    if (col.key) {
+      th.addEventListener('click', () => {
+        if (currentSort.key === col.key) currentSort.dir = currentSort.dir === 'desc' ? 'asc' : 'desc';
+        else { currentSort.key = col.key; currentSort.dir = 'desc'; }
+        renderWeekly(gw);
+      });
+    }
+    thead.appendChild(th);
+  });
+  tableEl.appendChild(thead);
+
+  data.forEach(r => {
+    const rank = rankMap[r.player_name];
     const cap = caps.find(c => Number(c.entry_id) === Number(r.entry_id));
     const isLast = r.gross_points === minPts;
     const isLow = r.gross_points < 45 && !isLast;
     const entryId = PLAYER_MAP[r.player_name];
 
-    // 排名升跌
     let moveHtml = '';
     if (prevRanks[r.player_name]) {
       const diff = prevRanks[r.player_name] - rank;
-      if (diff > 0) moveHtml = `<span class="move-up"></span>`;
-      else if (diff < 0) moveHtml = `<span class="move-down"></span>`;
+      if (diff > 0) moveHtml = `<span class="move-up">▲</span>`;
+      else if (diff < 0) moveHtml = `<span class="move-down">▼</span>`;
       else moveHtml = `<span class="move-same"></span>`;
     }
 
