@@ -35,10 +35,13 @@
   th { padding: 10px 14px; text-align: left; font-size: 12px; color: #8b949e; font-weight: 500; background: #1c2128; border-bottom: 1px solid #30363d; }
   td { padding: 10px 14px; border-top: 1px solid #21262d; font-size: 13px; }
   td.col-important { font-weight: 700; }
-  tr:hover td { background: #1c2128; }
+  tr.data-row { cursor: pointer; }
+  tr.data-row:hover td { background: #1c2128; }
+  tr.data-row.expanded td { background: #1c2128; }
   th:first-child { position: sticky; left: 0; z-index: 3; background: #1c2128; border-right: 1px solid #30363d; }
   td:first-child { position: sticky; left: 0; z-index: 2; background: #161b22; border-right: 1px solid #30363d; }
-  tr:hover td:first-child { background: #1c2128; }
+  tr.data-row:hover td:first-child { background: #1c2128; }
+  tr.data-row.expanded td:first-child { background: #1c2128; }
   .last-place td { background: #4a0000 !important; }
   .last-place td:first-child { background: #4a0000 !important; border-left: 4px solid #f85149; }
   .low-score td { background: #2d2b10 !important; }
@@ -49,6 +52,27 @@
   .cap-fail { color: #f0883e; font-weight: 600; }
   .player-link { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
   .player-link:hover { color: #58a6ff; }
+  .expand-icon { color: #8b949e; font-size: 11px; margin-left: 6px; transition: transform 0.2s; display: inline-block; }
+  .expanded .expand-icon { transform: rotate(180deg); }
+
+  /* 陣容展開行 */
+  tr.squad-row td { padding: 0; border-top: none; background: #0d1117 !important; }
+  tr.squad-row td:first-child { background: #0d1117 !important; border-right: none; }
+  .squad-container { padding: 16px; border-top: 1px solid #30363d; }
+  .squad-section-label { font-size: 11px; color: #8b949e; margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
+  .squad-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .player-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; width: 80px; text-align: center; overflow: hidden; flex-shrink: 0; }
+  .player-card.is-captain { border-color: #ffd700; }
+  .player-card.is-vc { border-color: #c0c0c0; }
+  .player-card.is-bench { opacity: 0.6; }
+  .player-card-shirt { font-size: 24px; padding: 8px 0 4px; background: #1c2128; }
+  .player-card-name { font-size: 11px; font-weight: 600; padding: 4px 4px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player-card-pts { font-size: 14px; font-weight: 700; padding: 2px 4px; color: #3fb950; }
+  .player-card-pts.zero { color: #8b949e; }
+  .player-card-pts.negative { color: #f85149; }
+  .player-card-badge { font-size: 10px; padding: 2px 4px 4px; color: #ffd700; font-weight: 700; }
+  .squad-loading { color: #8b949e; font-size: 13px; padding: 20px; text-align: center; }
+
   .admin-panel { display: none; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
   .admin-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
   .admin-input { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 7px 12px; border-radius: 6px; font-size: 13px; }
@@ -63,6 +87,7 @@
   .loading { padding: 40px; text-align: center; color: #8b949e; }
   .auto-refresh-indicator { font-size: 11px; color: #3fb950; }
   .pool-footer { padding: 12px 16px; background: #1c2128; border-top: 2px solid #30363d; font-size: 13px; color: #8b949e; }
+
   .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
   .modal-overlay.active { display: flex; }
   .modal { background: #161b22; border: 1px solid #30363d; border-radius: 12px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
@@ -198,6 +223,8 @@ const CHIP_DISPLAY = {
   'triple_captain': '👑 TC', '3xc': '👑 TC',
   'bboost': '🚀 BB', 'wildcard': '🔄 WC', 'freehit': '🆓 FH'
 };
+const POSITION_MAP = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' };
+const SHIRT_EMOJI = { 1: '🧤', 2: '🛡️', 3: '⚙️', 4: '⚡️' };
 
 let allResults = [], allCapLog = [], latestGW = null;
 let currentGW = null;
@@ -206,6 +233,8 @@ let refreshCountdown = 300;
 let modalChart = null;
 let currentModalPlayer = null;
 let currentModalTab = 'penalty';
+let expandedRow = null;
+let elementData = {};
 
 async function supabaseGet(table, query = '') {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
@@ -256,6 +285,16 @@ async function loadData() {
     document.getElementById('last-updated').textContent = '未有數據';
   }
 
+  // 預載 bootstrap 數據
+  try {
+    const boot = await fetchFPL('bootstrap-static/');
+    if (boot.elements) {
+      boot.elements.forEach(el => {
+        elementData[el.id] = { name: el.web_name, pos: el.element_type };
+      });
+    }
+  } catch(e) {}
+
   renderWeekly(currentGW || latestGW);
   renderSummaryTable();
   renderCaptainTable();
@@ -277,6 +316,87 @@ function startAutoRefresh() {
       document.getElementById('refresh-indicator').textContent = `⏱ ${refreshCountdown}s`;
     }
   }, 1000);
+}
+
+// 展開陣容
+async function toggleSquad(rowEl, playerName, entryId, gw) {
+  const squadRowId = `squad-${entryId}`;
+  const existingRow = document.getElementById(squadRowId);
+
+  if (existingRow) {
+    existingRow.remove();
+    rowEl.classList.remove('expanded');
+    expandedRow = null;
+    return;
+  }
+
+  // 收埋其他展開行
+  if (expandedRow) {
+    const oldSquad = document.getElementById(`squad-${expandedRow}`);
+    if (oldSquad) oldSquad.remove();
+    const oldRow = document.querySelector('.data-row.expanded');
+    if (oldRow) oldRow.classList.remove('expanded');
+  }
+  expandedRow = entryId;
+  rowEl.classList.add('expanded');
+
+  // 插入 loading 行
+  const squadRow = document.createElement('tr');
+  squadRow.id = squadRowId;
+  squadRow.className = 'squad-row';
+  const colCount = rowEl.cells.length;
+  squadRow.innerHTML = `<td colspan="${colCount}"><div class="squad-container"><div class="squad-loading">⏳ 載入陣容...</div></div></td>`;
+  rowEl.insertAdjacentElement('afterend', squadRow);
+
+  try {
+    const [picksRes, liveRes] = await Promise.all([
+      fetchFPL(`entry/${entryId}/event/${gw}/picks/`),
+      fetchFPL(`event/${gw}/live/`)
+    ]);
+
+    const liveMap = {};
+    (liveRes.elements || []).forEach(e => {
+      liveMap[e.id] = (e.stats && e.stats.total_points) || 0;
+    });
+
+    const picks = picksRes.picks || [];
+    const starters = picks.filter(p => p.position <= 11);
+    const bench = picks.filter(p => p.position > 11);
+
+    function renderCards(players) {
+      return players.map(p => {
+        const el = elementData[p.element] || { name: `#${p.element}`, pos: 1 };
+        const pts = liveMap[p.element] !== undefined ? liveMap[p.element] : '-';
+        const ptsClass = pts === '-' ? '' : pts > 0 ? '' : pts < 0 ? 'negative' : 'zero';
+        const isCap = p.is_captain;
+        const isVC = p.is_vice_captain;
+        const cardClass = `player-card${isCap ? ' is-captain' : isVC ? ' is-vc' : ''}`;
+        const badge = isCap ? '© 隊長' : isVC ? '𝓥 副隊' : '';
+        const shirt = SHIRT_EMOJI[el.pos] || '👕';
+        return `<div class="${cardClass}">
+          <div class="player-card-shirt">${shirt}</div>
+          <div class="player-card-name">${el.name}</div>
+          <div class="player-card-pts ${ptsClass}">${pts}</div>
+          ${badge ? `<div class="player-card-badge">${badge}</div>` : '<div style="height:18px"></div>'}
+        </div>`;
+      }).join('');
+    }
+
+    const html = `
+      <div class="squad-section-label">正選</div>
+      <div class="squad-grid">${renderCards(starters)}</div>
+      <div class="squad-section-label">後備</div>
+      <div class="squad-grid">${renderCards(bench.map(p => ({...p, isBench: true})))}</div>
+    `;
+
+    squadRow.querySelector('.squad-container').innerHTML = html;
+    bench.forEach(p => {
+      // 後備卡片加暗化
+    });
+
+  } catch(e) {
+    squadRow.querySelector('.squad-container').innerHTML = `<div class="squad-loading">❌ 載入失敗</div>`;
+  }
 }
 
 function showPlayerChart(playerName) {
@@ -308,7 +428,6 @@ function renderModalChart(playerName, tab) {
   const labels = gws.map(g => `GW${g}`);
   const playerIdx = PLAYER_ORDER.indexOf(playerName);
   const color = PLAYER_COLORS[playerIdx] || '#58a6ff';
-
   let data, label;
 
   if (tab === 'penalty') {
@@ -318,7 +437,6 @@ function renderModalChart(playerName, tab) {
     });
     label = '累積罰款 ($)';
   } else {
-    // 排名走勢：用 9-rank 令第1名係最高點
     data = gws.map(gw => {
       const gwData = allResults.filter(r => r.gw === gw).sort((a,b) => b.cumul_net_points - a.cumul_net_points);
       const idx = gwData.findIndex(r => r.player_name === playerName);
@@ -328,32 +446,16 @@ function renderModalChart(playerName, tab) {
   }
 
   if (modalChart) { modalChart.destroy(); modalChart = null; }
-
   modalChart = new Chart(document.getElementById('modal-chart'), {
     type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label,
-        data,
-        borderColor: color,
-        backgroundColor: color + '30',
-        tension: 0.3,
-        pointRadius: 4,
-        borderWidth: 2,
-        fill: true
-      }]
-    },
+    data: { labels, datasets: [{ label, data, borderColor: color, backgroundColor: color + '30', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: true }] },
     options: {
       responsive: true,
       plugins: { legend: { display: false } },
       scales: {
         x: { ticks: { color: '#8b949e', font: { size: 11 } }, grid: { color: '#21262d' } },
         y: {
-          ticks: {
-            color: '#8b949e', font: { size: 11 },
-            callback: v => tab === 'penalty' ? `$${v}` : `第${9-v}名`
-          },
+          ticks: { color: '#8b949e', font: { size: 11 }, callback: v => tab === 'penalty' ? `$${v}` : `第${9-v}名` },
           grid: { color: '#21262d' },
           reverse: false,
           min: tab === 'rank' ? 1 : undefined,
@@ -367,6 +469,7 @@ function renderModalChart(playerName, tab) {
 function renderWeekly(gw) {
   if (!gw) return;
   currentGW = gw;
+  expandedRow = null;
   document.getElementById('weekly-title').textContent = `GW${gw} 詳情`;
 
   const gws = [...new Set(allResults.map(r => r.gw))];
@@ -395,7 +498,8 @@ function renderWeekly(gw) {
     const cap = caps.find(c => Number(c.entry_id) === Number(r.entry_id));
     const isLast = r.gross_points === minPts;
     const isLow = r.gross_points < 45 && !isLast;
-    const rowClass = isLast ? 'last-place' : (isLow ? 'low-score' : '');
+    const rowClass = `data-row${isLast ? ' last-place' : isLow ? ' low-score' : ''}`;
+    const entryId = PLAYER_MAP[r.player_name];
     const capName = cap ? cap.captain.replace(' (VC)', '') : '-';
     const isVC = cap && cap.captain.includes('(VC)');
     const chip = cap ? (CHIP_DISPLAY[cap.chip] || '') : '';
@@ -415,8 +519,8 @@ function renderWeekly(gw) {
     const cumulCapPts = allCapsForPlayer.reduce((s,c) => s + (c.captain_pts || 0), 0);
     const fmt = v => v === 0 ? '$0' : `-$${Math.abs(v)}`;
 
-    html += `<tr class="${rowClass}">
-      <td><strong class="player-link" data-name="${r.player_name}" onclick="showPlayerChart(this.dataset.name)">${r.player_name}</strong></td>
+    html += `<tr class="${rowClass}" onclick="handleRowClick(event, this, '${r.player_name}', ${entryId}, ${gw})">
+      <td><strong class="player-link" data-name="${r.player_name}" onclick="event.stopPropagation(); showPlayerChart(this.dataset.name)">${r.player_name}</strong> <span class="expand-icon">▼</span></td>
       <td>${r.gross_points}</td>
       <td>${fmt(r.league_penalty)}</td>
       <td>${fmt(r.h2h_penalty)}</td>
@@ -431,16 +535,18 @@ function renderWeekly(gw) {
     </tr>`;
   });
 
-  // 全體累積罰款總額
   const totalPool = gwResults.reduce((s,r) => s + Math.abs(r.cumul_penalty), 0);
-  html += `</table>`;
+  html += '</table>';
   document.getElementById('weekly-table').innerHTML = html;
 
-  // 加 pool footer
   const footer = document.createElement('div');
   footer.className = 'pool-footer';
   footer.innerHTML = `💰 截至 GW${gw} 全體累積罰款：<strong style="color:#f85149;font-size:15px;">$${totalPool}</strong>`;
   document.getElementById('weekly-table').appendChild(footer);
+}
+
+function handleRowClick(event, rowEl, playerName, entryId, gw) {
+  toggleSquad(rowEl, playerName, entryId, gw);
 }
 
 function renderSummaryTable() {
@@ -451,7 +557,6 @@ function renderSummaryTable() {
   }).sort((a,b) => a.penalty - b.penalty);
 
   if (!data.some(d => d.pts > 0)) { document.getElementById('summary-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
-
   const totalPool = data.reduce((s,p) => s + Math.abs(p.penalty), 0);
   let html = '<table><tr><th>#</th><th>玩家</th><th class="col-important">累積罰款</th><th class="col-important">累積總分</th></tr>';
   data.forEach((p, i) => {
@@ -460,9 +565,8 @@ function renderSummaryTable() {
       <td class="col-important">${p.penalty < 0 ? `-$${Math.abs(p.penalty)}` : '$0'}</td>
       <td class="col-important">${p.pts}</td></tr>`;
   });
-  html += `</table>`;
+  html += '</table>';
   document.getElementById('summary-table').innerHTML = html;
-
   const footer = document.createElement('div');
   footer.className = 'pool-footer';
   footer.innerHTML = `💰 全季累積罰款總額：<strong style="color:#f85149;font-size:15px;">$${totalPool}</strong>`;
@@ -481,8 +585,7 @@ function renderCaptainTable() {
   if (!data.some(d => d.total > 0)) { document.getElementById('captain-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
   let html = '<table><tr><th>#</th><th>玩家</th><th class="col-important">Cap 總分</th><th>成功率</th></tr>';
   data.forEach((p, i) => {
-    html += `<tr><td class="rank-num">${i+1}</td>
-      <td><strong>${p.name}</strong></td>
+    html += `<tr><td class="rank-num">${i+1}</td><td><strong>${p.name}</strong></td>
       <td class="col-important"><strong>${p.totalPts}</strong></td>
       <td>${p.rate}% (${p.ok}/${p.total})</td></tr>`;
   });
