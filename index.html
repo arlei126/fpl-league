@@ -102,9 +102,9 @@
 
   /* ===== 手機版陣容卡片 ===== */
   @media (max-width: 700px) {
-    .squad-container { padding: 4px; width: 100%; max-width: 100%; overflow: hidden; box-sizing: border-box; }
+    .squad-container { padding: 4px; width: 100%; max-width: 100%; overflow: hidden; box-sizing: border-box; display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 2px; }
     .squad-section-label { display: none; }
-    .squad-grid { gap: 2px; margin-bottom: 2px; display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); }
+    .squad-grid { display: contents; }
     .player-card { width: auto; border-radius: 3px; border-width: 1px; }
     .player-card.is-bench { opacity: 0.45; }
     .player-card-shirt { padding: 2px 0 1px; height: 26px; }
