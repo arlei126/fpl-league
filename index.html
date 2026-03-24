@@ -26,11 +26,11 @@
   .nav-tab { flex: 1; text-align: center; padding: 8px 4px; cursor: pointer; color: #8b949e; border-radius: 6px; font-size: 13px; transition: all 0.2s; }
   .nav-tab.active { background: #1f6feb; color: #fff; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } .nav-tab { font-size: 11px; padding: 6px 2px; } .overflow-x { max-height: 75vh; overflow: auto; } }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } .nav-tab { font-size: 11px; padding: 6px 2px; } .desk-only { display: none !important; } th { padding: 6px 8px; font-size: 11px; } td { padding: 6px 8px; font-size: 12px; } table { width: 100%; min-width: auto; } }
   .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
   .card-title { padding: 12px 16px; background: #1c2128; font-size: 14px; font-weight: 600; color: #58a6ff; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; }
   .worst-gw-badge { background: #f85149; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
-  .overflow-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .overflow-x { overflow: auto; -webkit-overflow-scrolling: touch; max-height: 80vh; }
   table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; }
   th { padding: 10px 14px; text-align: left; font-size: 12px; color: #8b949e; font-weight: 500; background: #1c2128; border-bottom: 1px solid #30363d; position: sticky; top: 0; z-index: 4; }
   td { padding: 10px 14px; border-top: 1px solid #21262d; font-size: 13px; }
@@ -102,17 +102,17 @@
 
   /* ===== 手機版陣容卡片 ===== */
   @media (max-width: 700px) {
-    .squad-container { padding: 6px; width: calc(100vw - 20px); max-width: calc(100vw - 20px); overflow: hidden; }
-    .squad-section-label { font-size: 10px; margin-bottom: 4px; }
-    .squad-grid { gap: 3px; margin-bottom: 8px; display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); }
-    .player-card { width: auto; border-radius: 4px; }
-    .player-card-shirt { padding: 3px 0 1px; height: 32px; }
-    .player-card-shirt img { height: 26px; }
-    .player-card-shirt-fallback { font-size: 16px; }
-    .player-card-name { font-size: 7px; padding: 1px 1px 0; }
-    .player-card-pts { font-size: 10px; padding: 0 1px 1px; }
-    .player-card-badge { font-size: 6px; padding: 1px 2px; }
-    .player-card-badge-spacer { height: 12px; }
+    .squad-container { padding: 4px; width: calc(100vw - 16px); max-width: calc(100vw - 16px); overflow: hidden; }
+    .squad-section-label { font-size: 9px; margin-bottom: 3px; }
+    .squad-grid { gap: 2px; margin-bottom: 6px; display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); }
+    .player-card { width: auto; border-radius: 3px; border-width: 1px; }
+    .player-card-shirt { padding: 2px 0 1px; height: 28px; }
+    .player-card-shirt img { height: 22px; }
+    .player-card-shirt-fallback { font-size: 14px; }
+    .player-card-name { font-size: 6.5px; padding: 1px 1px 0; }
+    .player-card-pts { font-size: 9px; padding: 0 1px 1px; }
+    .player-card-badge { font-size: 5.5px; padding: 1px 2px; }
+    .player-card-badge-spacer { height: 10px; }
   }
 </style>
 </head>
@@ -520,7 +520,7 @@ function renderWeekly(gw) {
   const data = [...gwResults].sort((a,b) => b.cumul_net_points - a.cumul_net_points);
 
   const tableEl = document.createElement('table');
-  tableEl.innerHTML = '<tr><th>玩家</th><th>今周分</th><th>League罰款</th><th>H2H罰款</th><th class="col-important">今周$$$$</th><th class="col-important">累積罰款</th><th class="col-important">累積總分</th><th>隊長</th><th>今周Cap分</th><th>累積Cap分</th><th>成功率</th><th>Chip</th></tr>';
+  tableEl.innerHTML = '<tr><th>玩家</th><th>今周分</th><th class="desk-only">League罰款</th><th class="desk-only">H2H罰款</th><th class="col-important">今周$$$$</th><th class="col-important">累積罰款</th><th class="col-important desk-only">累積總分</th><th class="desk-only">隊長</th><th class="desk-only">今周Cap分</th><th class="desk-only">累積Cap分</th><th class="desk-only">成功率</th><th class="desk-only">Chip</th></tr>';
 
   data.forEach(r => {
     const cap = caps.find(c => Number(c.entry_id) === Number(r.entry_id));
@@ -555,16 +555,16 @@ function renderWeekly(gw) {
     tr.innerHTML = `
       <td><strong class="player-link" data-name="${r.player_name}">${r.player_name}</strong> <span class="expand-icon">▼</span></td>
       <td>${r.gross_points}</td>
-      <td>${fmt(r.league_penalty)}</td>
-      <td>${fmt(r.h2h_penalty)}</td>
+      <td class="desk-only">${fmt(r.league_penalty)}</td>
+      <td class="desk-only">${fmt(r.h2h_penalty)}</td>
       <td class="col-important">${fmt(r.total_penalty)}</td>
       <td class="col-important">${fmt(r.cumul_penalty)}</td>
-      <td class="col-important">${r.cumul_net_points}</td>
-      <td>${capNameHtml}</td>
-      <td>${capPts}</td>
-      <td>${cumulCapPts}</td>
-      <td>${rate}</td>
-      <td>${chip}</td>
+      <td class="col-important desk-only">${r.cumul_net_points}</td>
+      <td class="desk-only">${capNameHtml}</td>
+      <td class="desk-only">${capPts}</td>
+      <td class="desk-only">${cumulCapPts}</td>
+      <td class="desk-only">${rate}</td>
+      <td class="desk-only">${chip}</td>
     `;
 
     tr.querySelector('.player-link').addEventListener('click', e => {
