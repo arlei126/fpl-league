@@ -324,13 +324,14 @@ function renderModalChart(playerName, tab) {
     label = '累積罰款 ($)';
     yLabel = '$';
   } else {
-    // 排名走勢：每周排名（1 = 最好）
+  } else {
+    // 排名走勢：每周累積總分排名
     data = gws.map(gw => {
-      const gwData = allResults.filter(r => r.gw === gw).sort((a,b) => b.gross_points - a.gross_points);
+      const gwData = allResults.filter(r => r.gw === gw).sort((a,b) => b.cumul_net_points - a.cumul_net_points);
       const idx = gwData.findIndex(r => r.player_name === playerName);
       return idx >= 0 ? idx + 1 : null;
     });
-    label = '每周排名';
+    label = '累積總分排名';
     yLabel = '名';
   }
 
