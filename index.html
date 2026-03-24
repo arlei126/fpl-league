@@ -98,10 +98,23 @@
   .modal-tab { padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; color: #8b949e; border: 1px solid #30363d; }
   .modal-tab.active { background: #1f6feb; color: #fff; border-color: #1f6feb; }
   .modal-chart-container { padding: 20px; }
+ 
+  /* ===== 手機版陣容卡片 ===== */
+  @media (max-width: 700px) {
+    .squad-container { padding: 10px; }
+    .squad-grid { gap: 4px; margin-bottom: 10px; }
+    .player-card { width: 58px; border-radius: 6px; }
+    .player-card-shirt { padding: 4px 0 2px; height: 38px; }
+    .player-card-shirt img { height: 30px; }
+    .player-card-shirt-fallback { font-size: 20px; }
+    .player-card-name { font-size: 8px; padding: 2px 2px 1px; }
+    .player-card-pts { font-size: 11px; padding: 1px 2px 2px; }
+    .player-card-badge { font-size: 7px; padding: 1px 3px; }
+  }
 </style>
 </head>
 <body>
-
+ 
 <div class="header">
   <h1>⚽️ 完季食大餐 🍽️🍻</h1>
   <div class="header-right">
@@ -110,7 +123,7 @@
     <button class="admin-toggle" onclick="toggleAdmin()">🔧 更新</button>
   </div>
 </div>
-
+ 
 <div class="modal-overlay" id="player-modal" onclick="closeModal(event)">
   <div class="modal">
     <div class="modal-header">
@@ -126,7 +139,7 @@
     </div>
   </div>
 </div>
-
+ 
 <div class="container">
   <div class="admin-panel" id="admin-panel">
     <div class="admin-section-label">密碼</div>
@@ -149,12 +162,12 @@
     </div>
     <div class="status-msg" id="admin-status"></div>
   </div>
-
+ 
   <div class="nav-tabs">
     <div class="nav-tab active" onclick="switchView('weekly')">📅 本周</div>
     <div class="nav-tab" onclick="switchView('summary')">🏆 總覽</div>
   </div>
-
+ 
   <div id="view-weekly">
     <div class="gw-bar" id="gw-bar" style="display:none">
       <span class="gw-bar-label">睇指定周：</span>
@@ -172,7 +185,7 @@
       </div>
     </div>
   </div>
-
+ 
   <div id="view-summary" style="display:none">
     <div class="grid">
       <div class="card">
@@ -194,7 +207,7 @@
     </div>
   </div>
 </div>
-
+ 
 <script>
 const SUPABASE_URL = 'https://ucwsinzfpvjzdeqncjqc.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjd3NpbnpmcHZqemRlcW5janFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNzAzODUsImV4cCI6MjA4OTc0NjM4NX0.CncnodPpTasZlOaw4ueZDyM4lSdxkOe51PkJ1DtHOZY';
@@ -212,21 +225,21 @@ const CHIP_DISPLAY = {
   'triple_captain': '👑 TC', '3xc': '👑 TC',
   'bboost': '🚀 BB', 'wildcard': '🔄 WC', 'freehit': '🆓 FH'
 };
-
+ 
 let allResults = [], allCapLog = [], latestGW = null;
 let currentGW = null;
 let autoRefreshTimer = null, refreshCountdown = 300;
 let modalChart = null, currentModalPlayer = null, currentModalTab = 'penalty';
 let elementData = {};
 const squadCache = {};
-
+ 
 async function supabaseGet(table, query = '') {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
   });
   return res.json();
 }
-
+ 
 async function supabaseUpsert(table, data) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=gw,entry_id`, {
     method: 'POST',
@@ -239,7 +252,7 @@ async function supabaseUpsert(table, data) {
   if (!res.ok) { const err = await res.text(); throw new Error(`Supabase 寫入失敗：${err}`); }
   return true;
 }
-
+ 
 async function fetchFPL(path) {
   const res = await fetch(
     `https://ucwsinzfpvjzdeqncjqc.supabase.co/functions/v1/bright-processor?path=${encodeURIComponent(path)}`,
@@ -247,13 +260,13 @@ async function fetchFPL(path) {
   );
   return JSON.parse(await res.text());
 }
-
+ 
 async function loadData() {
   allResults = await supabaseGet('weekly_results', '?order=gw.asc');
   allCapLog = await supabaseGet('cap_log', '?order=gw.asc');
   if (!Array.isArray(allResults)) allResults = [];
   if (!Array.isArray(allCapLog)) allCapLog = [];
-
+ 
   const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
   if (gws.length > 0) {
     latestGW = gws[gws.length - 1];
@@ -266,7 +279,7 @@ async function loadData() {
   } else {
     document.getElementById('last-updated').textContent = '未有數據';
   }
-
+ 
   try {
     const boot = await fetchFPL('bootstrap-static/');
     const teamCodeMap = {};
@@ -275,7 +288,7 @@ async function loadData() {
       elementData[el.id] = { name: el.web_name, pos: el.element_type, teamCode: teamCodeMap[el.team] || 0 };
     });
   } catch(e) {}
-
+ 
   renderWeekly(currentGW || latestGW);
   renderSummaryTable();
   renderCaptainTable();
@@ -284,7 +297,7 @@ async function loadData() {
   startAutoRefresh();
   preloadSquads(currentGW || latestGW);
 }
-
+ 
 async function preloadSquads(gw) {
   if (!gw) return;
   let liveData = null;
@@ -302,75 +315,92 @@ async function preloadSquads(gw) {
     await new Promise(r => setTimeout(r, 200));
   }
 }
-
+ 
 function shirtImg(teamCode, isBench) {
   if (!teamCode) return `<span class="player-card-shirt-fallback">👕</span>`;
   const url = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}${isBench ? '_1' : ''}-110.png`;
   return `<img src="${url}" onerror="this.parentNode.innerHTML='<span class=\\'player-card-shirt-fallback\\'>👕</span>'" alt="">`;
 }
-
-// usedVC = cap_log 入面 captain 有 (VC) 字
-function buildSquadHTML(picks, liveMap, isBench, usedVC) {
+ 
+// multiplier: 2 (normal) or 3 (TC)
+// usedVC: true = VC 被用做有效隊長
+function buildSquadHTML(picks, liveMap, isBench, usedVC, multiplier) {
   return picks.map(p => {
     const el = elementData[p.element] || { name: `#${p.element}`, pos: 1, teamCode: 0 };
-    const pts = liveMap[p.element] !== undefined ? liveMap[p.element] : '-';
-    const ptsClass = pts === '-' ? '' : pts > 0 ? '' : pts < 0 ? 'negative' : 'zero';
+    const rawPts = liveMap[p.element] !== undefined ? liveMap[p.element] : null;
     const isCap = p.is_captain;
     const isVC = p.is_vice_captain;
-
+ 
+    // 判斷呢個球員係咪有效隊長（要乘分）
+    const isEffectiveCaptain = (!usedVC && isCap) || (usedVC && isVC);
+    // 計算顯示分數：有效隊長乘 multiplier
+    let displayPts;
+    if (rawPts === null) {
+      displayPts = '-';
+    } else if (isEffectiveCaptain && !isBench) {
+      displayPts = rawPts * multiplier;
+    } else {
+      displayPts = rawPts;
+    }
+ 
+    const ptsClass = displayPts === '-' ? '' : displayPts > 0 ? '' : displayPts < 0 ? 'negative' : 'zero';
+ 
     let cardClass = 'player-card';
-    // 金邊：正常係 captain，如果 VC 被用就係 vc 嗰個
     if (!usedVC && isCap) cardClass += ' is-captain';
     if (usedVC && isVC) cardClass += ' is-vc-active';
     if (isBench) cardClass += ' is-bench';
-
-    // badge：只顯示 C（captain 冇出先顯示 VC badge）
+ 
     let badge = '<div style="height:18px"></div>';
     if (!usedVC && isCap) {
       badge = `<div class="player-card-badge">© C</div>`;
     } else if (usedVC && isVC) {
       badge = `<div class="player-card-badge vc-badge-card">𝓥 VC</div>`;
     }
-
+ 
     return `<div class="${cardClass}">
       <div class="player-card-shirt">${shirtImg(el.teamCode, isBench)}</div>
       <div class="player-card-name">${el.name}</div>
-      <div class="player-card-pts ${ptsClass}">${pts}</div>
+      <div class="player-card-pts ${ptsClass}">${displayPts}</div>
       ${badge}
     </div>`;
   }).join('');
 }
-
+ 
 async function toggleSquad(entryId, gw, usedVC) {
   const squadRowId = `squad-${entryId}`;
   const existingRow = document.getElementById(squadRowId);
   const dataRow = document.querySelector(`tr.data-row[data-entry="${entryId}"]`);
-
+ 
   if (existingRow) {
     existingRow.remove();
     if (dataRow) dataRow.classList.remove('expanded');
     return;
   }
-
+ 
   if (dataRow) dataRow.classList.add('expanded');
   const colCount = dataRow ? dataRow.cells.length : 12;
   const squadRow = document.createElement('tr');
   squadRow.id = squadRowId;
   squadRow.className = 'squad-row';
-
+ 
   const cacheKey = `${entryId}_${gw}`;
-
+ 
+  // 從 cap_log 拎 chip 判斷 multiplier
+  const capEntry = allCapLog.find(c => Number(c.entry_id) === Number(entryId) && c.gw === gw);
+  const chipRaw = capEntry ? (capEntry.chip || '') : '';
+  const multiplier = CHIP_TC_KEYS.includes(chipRaw) ? 3 : 2;
+ 
   function renderSquadContent(picks, liveMap) {
     const starters = picks.filter(p => p.position <= 11);
     const bench = picks.filter(p => p.position > 11);
     return `
       <div class="squad-section-label">正選</div>
-      <div class="squad-grid">${buildSquadHTML(starters, liveMap, false, usedVC)}</div>
+      <div class="squad-grid">${buildSquadHTML(starters, liveMap, false, usedVC, multiplier)}</div>
       <div class="squad-section-label">後備</div>
-      <div class="squad-grid">${buildSquadHTML(bench, liveMap, true, usedVC)}</div>
+      <div class="squad-grid">${buildSquadHTML(bench, liveMap, true, usedVC, multiplier)}</div>
     `;
   }
-
+ 
   if (squadCache[cacheKey]) {
     const { picks, liveMap } = squadCache[cacheKey];
     squadRow.innerHTML = `<td colspan="${colCount}"><div class="squad-container">${renderSquadContent(picks, liveMap)}</div></td>`;
@@ -393,7 +423,7 @@ async function toggleSquad(entryId, gw, usedVC) {
     }
   }
 }
-
+ 
 function startAutoRefresh() {
   if (autoRefreshTimer) clearInterval(autoRefreshTimer);
   refreshCountdown = 300;
@@ -408,23 +438,23 @@ function startAutoRefresh() {
     }
   }, 1000);
 }
-
+ 
 function showPlayerChart(playerName) {
   currentModalPlayer = playerName;
   document.getElementById('modal-player-name').textContent = playerName;
   document.getElementById('player-modal').classList.add('active');
   renderModalChart(playerName, currentModalTab);
 }
-
+ 
 function closeModal(event) {
   if (event.target === document.getElementById('player-modal')) closeModalDirect();
 }
-
+ 
 function closeModalDirect() {
   document.getElementById('player-modal').classList.remove('active');
   if (modalChart) { modalChart.destroy(); modalChart = null; }
 }
-
+ 
 function switchModalTab(tab) {
   currentModalTab = tab;
   document.querySelectorAll('.modal-tab').forEach((t, i) => {
@@ -432,7 +462,7 @@ function switchModalTab(tab) {
   });
   if (currentModalPlayer) renderModalChart(currentModalPlayer, tab);
 }
-
+ 
 function renderModalChart(playerName, tab) {
   const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
   const labels = gws.map(g => `GW${g}`);
@@ -462,12 +492,12 @@ function renderModalChart(playerName, tab) {
     }
   });
 }
-
+ 
 function renderWeekly(gw) {
   if (!gw) return;
   currentGW = gw;
   document.getElementById('weekly-title').textContent = `GW${gw} 詳情`;
-
+ 
   const gwTotals = [...new Set(allResults.map(r => r.gw))].map(g => {
     const d = allResults.filter(r => r.gw === g);
     return { gw: g, total: d.reduce((s,r) => s + Math.abs(r.total_penalty), 0) };
@@ -478,47 +508,43 @@ function renderWeekly(gw) {
   } else {
     document.getElementById('worst-gw-badge').style.display = 'none';
   }
-
+ 
   const gwResults = allResults.filter(r => r.gw === gw);
   const caps = allCapLog.filter(r => r.gw === gw);
   if (!gwResults.length) { document.getElementById('weekly-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
-
+ 
   const minPts = Math.min(...gwResults.map(r => r.gross_points));
-  // 按累積總分由高到低排
   const data = [...gwResults].sort((a,b) => b.cumul_net_points - a.cumul_net_points);
-
+ 
   const tableEl = document.createElement('table');
   tableEl.innerHTML = '<tr><th>玩家</th><th>今周分</th><th>League罰款</th><th>H2H罰款</th><th class="col-important">今周$$$$</th><th class="col-important">累積罰款</th><th class="col-important">累積總分</th><th>隊長</th><th>今周Cap分</th><th>累積Cap分</th><th>成功率</th><th>Chip</th></tr>';
-
+ 
   data.forEach(r => {
     const cap = caps.find(c => Number(c.entry_id) === Number(r.entry_id));
     const isLast = r.gross_points === minPts;
     const isLow = r.gross_points < 45 && !isLast;
     const entryId = PLAYER_MAP[r.player_name];
-
-    // 判斷 VC 係咪被用
+ 
     const usedVC = cap && cap.captain && cap.captain.includes('(VC)');
-    // 只顯示有效隊長名（已係正確嘅 C 或 VC）
     const capDisplayName = cap ? cap.captain.replace(' (VC)', '') : '-';
     const chip = cap ? (CHIP_DISPLAY[cap.chip] || '') : '';
-    // 今周Cap分：直接顯示 captain_pts（已係乘完嘅數，x2 或 x3）
     const capPts = cap ? cap.captain_pts : '-';
     const capOK = cap ? cap.cap_ok : null;
-
+ 
     let capNameHtml = '-';
     if (cap) {
       const colorClass = capOK === 1 ? 'cap-ok' : 'cap-fail';
       const vcLabel = usedVC ? '<span class="vc-badge">(VC)</span>' : '';
       capNameHtml = `<span class="${colorClass}">${capDisplayName}${vcLabel}</span>`;
     }
-
+ 
     const allCapsForPlayer = allCapLog.filter(c => c.player_name === r.player_name && c.gw <= gw);
     const ok = allCapsForPlayer.filter(c => c.cap_ok === 1).length;
     const total = allCapsForPlayer.length;
     const rate = total > 0 ? (ok/total*100).toFixed(0) + '%' : '-';
     const cumulCapPts = allCapsForPlayer.reduce((s,c) => s + (c.captain_pts || 0), 0);
     const fmt = v => v === 0 ? '$0' : `-$${Math.abs(v)}`;
-
+ 
     const tr = document.createElement('tr');
     tr.className = `data-row${isLast ? ' last-place' : isLow ? ' low-score' : ''}`;
     tr.dataset.entry = entryId;
@@ -537,7 +563,7 @@ function renderWeekly(gw) {
       <td>${rate}</td>
       <td>${chip}</td>
     `;
-
+ 
     tr.querySelector('.player-link').addEventListener('click', e => {
       e.stopPropagation();
       showPlayerChart(r.player_name);
@@ -545,7 +571,7 @@ function renderWeekly(gw) {
     tr.addEventListener('click', () => toggleSquad(entryId, gw, usedVC));
     tableEl.appendChild(tr);
   });
-
+ 
   const totalPool = gwResults.reduce((s,r) => s + Math.abs(r.cumul_penalty), 0);
   const wrapper = document.getElementById('weekly-table');
   wrapper.innerHTML = '';
@@ -555,7 +581,7 @@ function renderWeekly(gw) {
   footer.innerHTML = `💰 截至 GW${gw} 全體累積罰款：<strong style="color:#f85149;font-size:15px;">$${totalPool}</strong>`;
   wrapper.appendChild(footer);
 }
-
+ 
 function renderSummaryTable() {
   const data = PLAYER_ORDER.map(name => {
     const rows = allResults.filter(r => r.player_name === name).sort((a,b) => b.gw - a.gw);
@@ -578,7 +604,7 @@ function renderSummaryTable() {
   footer.innerHTML = `💰 全季累積罰款總額：<strong style="color:#f85149;font-size:15px;">$${totalPool}</strong>`;
   document.getElementById('summary-table').appendChild(footer);
 }
-
+ 
 function renderCaptainTable() {
   const data = PLAYER_ORDER.map(name => {
     const caps = allCapLog.filter(r => r.player_name === name);
@@ -597,7 +623,7 @@ function renderCaptainTable() {
   html += '</table>';
   document.getElementById('captain-table').innerHTML = html;
 }
-
+ 
 function renderLastPlaceTable() {
   const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
   const cnt = {};
@@ -616,7 +642,7 @@ function renderLastPlaceTable() {
   html += '</table>';
   document.getElementById('lastplace-table').innerHTML = html;
 }
-
+ 
 function renderWorstGWTable() {
   const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
   const d = gws.map(gw => {
@@ -633,31 +659,31 @@ function renderWorstGWTable() {
   html += '</table>';
   document.getElementById('worstgw-table').innerHTML = html;
 }
-
+ 
 function switchView(view) {
   ['weekly','summary'].forEach(v => { document.getElementById(`view-${v}`).style.display = v === view ? 'block' : 'none'; });
   document.querySelectorAll('.nav-tab').forEach((tab, i) => { tab.classList.toggle('active', ['weekly','summary'][i] === view); });
 }
-
+ 
 function onGWSelect() {
   const gw = parseInt(document.getElementById('gw-select').value);
   if (gw) renderWeekly(gw);
 }
-
+ 
 function toggleAdmin() {
   const p = document.getElementById('admin-panel');
   p.style.display = p.style.display === 'block' ? 'none' : 'block';
 }
-
+ 
 function checkPwd() {
   if (document.getElementById('admin-password').value !== ADMIN_PASSWORD) { setStatus('❌ 密碼錯誤', 'err'); return false; }
   return true;
 }
-
+ 
 function setAllDisabled(v) {
   ['update-btn','latest-btn','batch-btn'].forEach(id => document.getElementById(id).disabled = v);
 }
-
+ 
 async function updateGW() {
   if (!checkPwd()) return;
   const gw = parseInt(document.getElementById('gw-input').value);
@@ -667,7 +693,7 @@ async function updateGW() {
   catch(e) { setStatus('❌ ' + e.message, 'err'); }
   setAllDisabled(false);
 }
-
+ 
 async function updateLatest() {
   if (!checkPwd()) return;
   setAllDisabled(true); setStatus('🔄 拎緊當前 GW...', '');
@@ -681,7 +707,7 @@ async function updateLatest() {
   } catch(e) { setStatus('❌ ' + e.message, 'err'); }
   setAllDisabled(false);
 }
-
+ 
 async function batchUpdate() {
   if (!checkPwd()) return;
   const from = parseInt(document.getElementById('batch-from').value);
@@ -697,7 +723,7 @@ async function batchUpdate() {
   setStatus(`✅ GW${from}–${to} 完成！`, 'ok');
   setAllDisabled(false);
 }
-
+ 
 function resolveEffectiveCaptain(capEl, vcEl, liveData, rawChip, teamMatchStatus, elementTeam) {
   const isTC = CHIP_TC_KEYS.includes(rawChip);
   if (isTC) return { el: capEl, multiplier: 3, usedVC: false };
@@ -707,7 +733,7 @@ function resolveEffectiveCaptain(capEl, vcEl, liveData, rawChip, teamMatchStatus
   if (capMins === 0 && (capStatus.noFixture || capStatus.kickedOff) && vcEl) return { el: vcEl, multiplier: 2, usedVC: true };
   return { el: capEl, multiplier: 2, usedVC: false };
 }
-
+ 
 async function runUpdate(gw) {
   const [h2hRes, bootRes, liveRes, fixtureRes] = await Promise.all([
     fetchFPL(`leagues-h2h-matches/league/${LEAGUE_ID}/?event=${gw}`),
@@ -769,7 +795,7 @@ async function runUpdate(gw) {
       capRows.push({
         gw, player_name: name, entry_id: entryId,
         captain: (elementName[eff.el] || eff.el) + (eff.usedVC ? ' (VC)' : ''),
-        captain_pts: rawPts * eff.multiplier, // 已乘 x2 或 x3
+        captain_pts: rawPts * eff.multiplier,
         cap_ok: rawPts >= 4 ? 1 : 0,
         chip: rawChip, updated_at: new Date().toISOString()
       });
@@ -779,7 +805,7 @@ async function runUpdate(gw) {
   await supabaseUpsert('cap_log', capRows);
   await loadData();
 }
-
+ 
 function calcH2H(matches, entryId) {
   for (const m of matches) {
     if (m.entry_1_entry === entryId) return m.entry_1_points < m.entry_2_points ? -20 : 0;
@@ -787,13 +813,14 @@ function calcH2H(matches, entryId) {
   }
   return 0;
 }
-
+ 
 function setStatus(msg, type) {
   const el = document.getElementById('admin-status');
   el.textContent = msg; el.className = 'status-msg ' + type;
 }
-
+ 
 loadData();
 </script>
 </body>
 </html>
+ 
