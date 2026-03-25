@@ -110,11 +110,14 @@
   .modal-tab.active { background: #1f6feb; color: #fff; border-color: #1f6feb; }
   .modal-chart-container { padding: 20px; }
 
+  .squad-mobile { display: none; }
+
   /* ===== 手機版陣容卡片（已修復 iOS display:contents bug）===== */
   @media (max-width: 700px) {
+    .squad-desktop { display: none; }
+    .squad-mobile { display: block; }
     .squad-container { padding: 4px; width: 100%; max-width: 100%; overflow: hidden; box-sizing: border-box; }
-    .squad-section-label { display: none; }
-    .squad-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; margin-bottom: 2px; }
+    .squad-mobile .squad-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }
     .player-card { width: auto; border-radius: 3px; border-width: 1px; }
     .player-card.is-bench { opacity: 0.45; }
     .player-card-shirt { padding: 2px 0 1px; height: 30px; }
@@ -416,10 +419,15 @@ async function toggleSquad(entryId, gw, usedVC) {
     const starters = picks.filter(p => p.position <= 11);
     const bench = picks.filter(p => p.position > 11);
     return `
-      <div class="squad-section-label">正選</div>
-      <div class="squad-grid">${buildSquadHTML(starters, liveMap, false, usedVC, multiplier, isBB)}</div>
-      <div class="squad-section-label">後備</div>
-      <div class="squad-grid">${buildSquadHTML(bench, liveMap, true, usedVC, multiplier, isBB)}</div>
+      <div class="squad-desktop">
+        <div class="squad-section-label">正選</div>
+        <div class="squad-grid">${buildSquadHTML(starters, liveMap, false, usedVC, multiplier, isBB)}</div>
+        <div class="squad-section-label">後備</div>
+        <div class="squad-grid">${buildSquadHTML(bench, liveMap, true, usedVC, multiplier, isBB)}</div>
+      </div>
+      <div class="squad-mobile">
+        <div class="squad-grid">${buildSquadHTML(starters, liveMap, false, usedVC, multiplier, isBB)}${buildSquadHTML(bench, liveMap, true, usedVC, multiplier, isBB)}</div>
+      </div>
     `;
   }
 
