@@ -112,10 +112,10 @@
 
   /* ===== 手機版陣容卡片 ===== */
   @media (max-width: 700px) {
-    .squad-container { padding: 4px; width: 100%; max-width: 100%; overflow: hidden; box-sizing: border-box; }
+    .squad-container { padding: 4px; width: 100%; max-width: 100%; overflow: hidden; box-sizing: border-box; display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 2px; }
     .squad-section-label { display: none; }
-    .squad-grid { display: flex; flex-wrap: wrap; gap: 2px; }
-    .player-card { width: calc((100% - 14px) / 8); min-width: 40px; border-radius: 3px; border-width: 1px; }
+    .squad-grid { display: contents; }
+    .player-card { width: auto; border-radius: 3px; border-width: 1px; }
     .player-card.is-bench { opacity: 0.45; }
     .player-card-shirt { padding: 2px 0 1px; height: 30px; }
     .player-card-shirt img { height: 24px; }
@@ -342,6 +342,8 @@ function shirtImg(teamCode, isBench) {
   return `<img src="${url}" onerror="this.parentNode.innerHTML='<span class=\\'player-card-shirt-fallback\\'>👕</span>'" alt="">`;
 }
 
+// multiplier: 2 (normal) or 3 (TC)
+// usedVC: true = VC 被用做有效隊長
 function buildSquadHTML(picks, liveMap, isBench, usedVC, multiplier, isBB) {
   return picks.map(p => {
     const el = elementData[p.element] || { name: `#${p.element}`, pos: 1, teamCode: 0 };
@@ -349,7 +351,9 @@ function buildSquadHTML(picks, liveMap, isBench, usedVC, multiplier, isBB) {
     const isCap = p.is_captain;
     const isVC = p.is_vice_captain;
 
+    // 判斷呢個球員係咪有效隊長（要乘分）
     const isEffectiveCaptain = (!usedVC && isCap) || (usedVC && isVC);
+    // 計算顯示分數：有效隊長乘 multiplier
     let displayPts;
     if (rawPts === null) {
       displayPts = '-';
@@ -401,6 +405,7 @@ async function toggleSquad(entryId, gw, usedVC) {
 
   const cacheKey = `${entryId}_${gw}`;
 
+  // 從 cap_log 拎 chip 判斷 multiplier
   const capEntry = allCapLog.find(c => Number(c.entry_id) === Number(entryId) && c.gw === gw);
   const chipRaw = capEntry ? (capEntry.chip || '') : '';
   const multiplier = CHIP_TC_KEYS.includes(chipRaw) ? 3 : 2;
@@ -411,10 +416,10 @@ async function toggleSquad(entryId, gw, usedVC) {
     const starters = picks.filter(p => p.position <= 11);
     const bench = picks.filter(p => p.position > 11);
     return `
-      <div class="squad-grid">
-        ${buildSquadHTML(starters, liveMap, false, usedVC, multiplier, isBB)}
-        ${buildSquadHTML(bench, liveMap, true, usedVC, multiplier, isBB)}
-      </div>
+      <div class="squad-section-label">正選</div>
+      <div class="squad-grid">${buildSquadHTML(starters, liveMap, false, usedVC, multiplier, isBB)}</div>
+      <div class="squad-section-label">後備</div>
+      <div class="squad-grid">${buildSquadHTML(bench, liveMap, true, usedVC, multiplier, isBB)}</div>
     `;
   }
 
@@ -532,10 +537,12 @@ function renderWeekly(gw) {
 
   const minPts = Math.min(...gwResults.map(r => r.gross_points));
 
+  // 排名永遠按累積總分
   const ranked = [...gwResults].sort((a,b) => b.cumul_net_points - a.cumul_net_points);
   const rankMap = {};
   ranked.forEach((r, i) => { rankMap[r.player_name] = i + 1; });
 
+  // 上周排名
   const prevGWResults = allResults.filter(r => r.gw === gw - 1);
   const prevRanks = {};
   if (prevGWResults.length) {
@@ -544,6 +551,7 @@ function renderWeekly(gw) {
     });
   }
 
+  // 顯示排序
   const sortKey = currentSort.key;
   const sortDir = currentSort.dir;
   const data = [...gwResults].sort((a,b) => {
@@ -626,7 +634,7 @@ function renderWeekly(gw) {
     const total = allCapsForPlayer.length;
     const rate = total > 0 ? (ok/total*100).toFixed(0) + '%' : '-';
     const cumulCapPts = allCapsForPlayer.reduce((s,c) => s + (c.captain_pts || 0), 0);
-    const fmt = v => `$${Math.abs(v)}`;
+    const fmt = v => v === 0 ? '$0' : `-$${Math.abs(v)}`;
 
     const tr = document.createElement('tr');
     tr.className = `data-row${isLast ? ' last-place' : isLow ? ' low-score' : ''}`;
@@ -677,7 +685,7 @@ function renderSummaryTable() {
   data.forEach((p, i) => {
     html += `<tr><td class="rank-num">${i+1}</td>
       <td><strong class="player-link" data-name="${p.name}" onclick="showPlayerChart(this.dataset.name)">${p.name}</strong></td>
-      <td class="col-important">$${Math.abs(p.penalty)}</td>
+      <td class="col-important">${p.penalty < 0 ? `-$${Math.abs(p.penalty)}` : '$0'}</td>
       <td class="col-important">${p.pts}</td></tr>`;
   });
   html += '</table>';
@@ -737,7 +745,7 @@ function renderWorstGWTable() {
   d.slice(0, 10).forEach((g, i) => {
     html += `<tr ${i === 0 ? 'style="background:#2d1515"' : ''}>
       <td class="rank-num">${i+1}${i === 0 ? ' 💀' : ''}</td>
-      <td><strong>GW${g.gw}</strong></td><td>$${g.totalPenalty}</td><td>${g.playerCount} 人</td></tr>`;
+      <td><strong>GW${g.gw}</strong></td><td>-$${g.totalPenalty}</td><td>${g.playerCount} 人</td></tr>`;
   });
   html += '</table>';
   document.getElementById('worstgw-table').innerHTML = html;
