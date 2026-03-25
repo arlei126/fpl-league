@@ -634,7 +634,7 @@ function renderWeekly(gw) {
     const total = allCapsForPlayer.length;
     const rate = total > 0 ? (ok/total*100).toFixed(0) + '%' : '-';
     const cumulCapPts = allCapsForPlayer.reduce((s,c) => s + (c.captain_pts || 0), 0);
-    const fmt = v => v === 0 ? '$0' : `-$${Math.abs(v)}`;
+    const fmt = v => `$${Math.abs(v)}`;
 
     const tr = document.createElement('tr');
     tr.className = `data-row${isLast ? ' last-place' : isLow ? ' low-score' : ''}`;
@@ -684,9 +684,9 @@ function renderSummaryTable() {
   let html = '<table><tr><th>#</th><th>玩家</th><th class="col-important">累積罰款</th><th class="col-important">累積總分</th></tr>';
   data.forEach((p, i) => {
     html += `<tr><td class="rank-num">${i+1}</td>
-      <td><strong class="player-link" data-name="${p.name}" onclick="showPlayerChart(this.dataset.name)">${p.name}</strong></td>
-      <td class="col-important">${p.penalty < 0 ? `-$${Math.abs(p.penalty)}` : '$0'}</td>
-      <td class="col-important">${p.pts}</td></tr>`;
+  <td><strong class="player-link" data-name="${p.name}" onclick="showPlayerChart(this.dataset.name)">${p.name}</strong></td>
+  <td class="col-important">$${Math.abs(p.penalty)}</td>
+  <td class="col-important">${p.pts}</td></tr>`;
   });
   html += '</table>';
   document.getElementById('summary-table').innerHTML = html;
