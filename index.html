@@ -288,9 +288,8 @@ async function loadData() {
   if (!Array.isArray(allResults)) allResults = [];
   if (!Array.isArray(allCapLog)) allCapLog = [];
 
-  var gws = [].concat(new Set(allResults.map(function(r){return r.gw}))).sort(function(a,b){return a-b});
-  // dedupe
-  var seen = {}; gws = gws.filter(function(g){ if(seen[g]) return false; seen[g]=1; return true; });
+  var gwSet = {}; allResults.forEach(function(r){ gwSet[r.gw] = 1; });
+  var gws = Object.keys(gwSet).map(Number).sort(function(a,b){ return a-b; });
 
   if (gws.length > 0) {
     latestGW = gws[gws.length - 1];
