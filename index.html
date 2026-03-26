@@ -12,170 +12,121 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  :root {
-    --bg-body: #0d1117;
-    --bg-card: #161b22;
-    --bg-header: #1c2128;
-    --bg-input: #21262d;
-    --border: #30363d;
-    --border-inner: #21262d;
-    --text-primary: #e6edf3;
-    --text-secondary: #8b949e;
-    --accent-blue: #58a6ff;
-    --accent-green: #3fb950;
-    --accent-red: #f85149;
-    --accent-orange: #f0883e;
-    --tab-active: #1f6feb;
-    --btn-green: #238636;
-    --btn-green-hover: #2ea043;
-    --last-place-bg: #4a0000;
-    --low-score-bg: #2d2b10;
-    --worst-row-bg: #2d1515;
-    --modal-overlay: rgba(0,0,0,0.8);
-  }
-  body.light {
-    --bg-body: #f6f8fa;
-    --bg-card: #ffffff;
-    --bg-header: #f0f3f6;
-    --bg-input: #e8ecf0;
-    --border: #d0d7de;
-    --border-inner: #d8dee4;
-    --text-primary: #1f2328;
-    --text-secondary: #656d76;
-    --accent-blue: #0969da;
-    --accent-green: #1a7f37;
-    --accent-red: #cf222e;
-    --accent-orange: #bc4c00;
-    --tab-active: #0969da;
-    --btn-green: #1a7f37;
-    --btn-green-hover: #218739;
-    --last-place-bg: #f8d0ce;
-    --low-score-bg: #fff8c5;
-    --worst-row-bg: #ffebe9;
-    --modal-overlay: rgba(0,0,0,0.5);
-  }
-  .theme-toggle { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-secondary); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 16px; line-height: 1; }
-
-  body { background: var(--bg-body); color: var(--text-primary); font-family: -apple-system, sans-serif; }
-  .header { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
-  .header h1 { font-size: 20px; color: var(--accent-blue); }
+  body { background: #0d1117; color: #e6edf3; font-family: -apple-system, sans-serif; }
+  .header { background: #161b22; border-bottom: 1px solid #30363d; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 20px; color: #58a6ff; }
   .header-right { display: flex; align-items: center; gap: 12px; }
-  .last-updated { color: var(--text-secondary); font-size: 12px; }
-  .admin-toggle { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-secondary); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .last-updated { color: #8b949e; font-size: 12px; }
+  .admin-toggle { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
   .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
   .gw-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-  .gw-bar-label { color: var(--text-secondary); font-size: 13px; white-space: nowrap; }
-  .gw-select { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary); padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; }
-  .nav-tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 4px; }
-  .nav-tab { flex: 1; text-align: center; padding: 8px 4px; cursor: pointer; color: var(--text-secondary); border-radius: 6px; font-size: 13px; transition: all 0.2s; }
-  .nav-tab.active { background: var(--tab-active); color: #fff; }
+  .gw-bar-label { color: #8b949e; font-size: 13px; white-space: nowrap; }
+  .gw-select { background: #21262d; border: 1px solid #30363d; color: #e6edf3; padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+  .nav-tabs { display: flex; gap: 4px; margin-bottom: 20px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 4px; }
+  .nav-tab { flex: 1; text-align: center; padding: 8px 4px; cursor: pointer; color: #8b949e; border-radius: 6px; font-size: 13px; transition: all 0.2s; }
+  .nav-tab.active { background: #1f6feb; color: #fff; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } .nav-tab { font-size: 11px; padding: 6px 2px; } .desk-only { display: none !important; } .chip-badge.mob-only { display: inline !important; } .desk-label { display: none !important; } .mob-label { display: inline !important; } th { padding: 5px 4px; font-size: 10px; } td { padding: 5px 4px; font-size: 11px; } table { width: 100%; min-width: auto; } td:first-child { position: static; border-right: none; } th:first-child { left: auto; border-right: none; } .rank-inline { font-size: 10px; } .move-up, .move-down, .move-same { font-size: 0; width: 0; height: 0; display: inline-block; vertical-align: middle; margin-right: 2px; overflow: hidden; } .move-up { border-left: 3px solid transparent; border-right: 3px solid transparent; border-bottom: 4px solid #3fb950; } .move-down { border-left: 3px solid transparent; border-right: 3px solid transparent; border-top: 4px solid #f85149; } .move-same { width: 4px; height: 4px; border-radius: 50%; background: var(--accent-blue); } .chip-badge { font-size: 7px; margin-left: 2px; } th.sortable { cursor: default; pointer-events: none; } .sort-arrow { display: none !important; } }
-  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
-  .card-title { padding: 12px 16px; background: var(--bg-header); font-size: 14px; font-weight: 600; color: var(--accent-blue); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-  .worst-gw-badge { background: var(--accent-red); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } .nav-tab { font-size: 11px; padding: 6px 2px; } .desk-only { display: none !important; } .chip-badge.mob-only { display: inline !important; } .desk-label { display: none !important; } .mob-label { display: inline !important; } th { padding: 5px 4px; font-size: 10px; } td { padding: 5px 4px; font-size: 11px; } table { width: 100%; min-width: auto; } td:first-child { position: static; border-right: none; } th:first-child { left: auto; border-right: none; } .rank-inline { font-size: 10px; } .move-up, .move-down, .move-same { font-size: 0; width: 0; height: 0; display: inline-block; vertical-align: middle; margin-right: 2px; overflow: hidden; } .move-up { border-left: 3px solid transparent; border-right: 3px solid transparent; border-bottom: 4px solid #3fb950; } .move-down { border-left: 3px solid transparent; border-right: 3px solid transparent; border-top: 4px solid #f85149; } .move-same { width: 4px; height: 4px; border-radius: 50%; background: #58a6ff; } .chip-badge { font-size: 7px; margin-left: 2px; } th.sortable { cursor: default; pointer-events: none; } .sort-arrow { display: none !important; } }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+  .card-title { padding: 12px 16px; background: #1c2128; font-size: 14px; font-weight: 600; color: #58a6ff; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; }
+  .worst-gw-badge { background: #f85149; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
   .overflow-x { overflow: auto; -webkit-overflow-scrolling: touch; max-height: 80vh; }
   table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; }
-  th { padding: 10px 14px; text-align: left; font-size: 12px; color: var(--text-secondary); font-weight: 500; background: var(--bg-header); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 4; }
-  td { padding: 10px 14px; border-top: 1px solid var(--border-inner); font-size: 13px; }
+  th { padding: 10px 14px; text-align: left; font-size: 12px; color: #8b949e; font-weight: 500; background: #1c2128; border-bottom: 1px solid #30363d; position: sticky; top: 0; z-index: 4; }
+  td { padding: 10px 14px; border-top: 1px solid #21262d; font-size: 13px; }
   td.col-important { font-weight: 700; }
   tr.data-row { cursor: pointer; }
-  tr.data-row:hover td { background: var(--bg-header); }
-  tr.data-row.expanded td { background: var(--bg-header); }
-  th:first-child { position: sticky; left: 0; top: 0; z-index: 5; background: var(--bg-header); border-right: 1px solid var(--border); }
-  td:first-child { position: sticky; left: 0; z-index: 2; background: var(--bg-card); border-right: 1px solid var(--border); }
-  tr.data-row:hover td:first-child { background: var(--bg-header); }
-  tr.data-row.expanded td:first-child { background: var(--bg-header); }
-  .last-place td { background: var(--last-place-bg) !important; }
-  .last-place td:first-child { background: var(--last-place-bg) !important; border-left-color: var(--accent-red); }
-  .low-score td { background: var(--low-score-bg) !important; }
-  .low-score td:first-child { background: var(--low-score-bg) !important; }
+  tr.data-row:hover td { background: #1c2128; }
+  tr.data-row.expanded td { background: #1c2128; }
+  th:first-child { position: sticky; left: 0; top: 0; z-index: 5; background: #1c2128; border-right: 1px solid #30363d; }
+  td:first-child { position: sticky; left: 0; z-index: 2; background: #161b22; border-right: 1px solid #30363d; }
+  tr.data-row:hover td:first-child { background: #1c2128; }
+  tr.data-row.expanded td:first-child { background: #1c2128; }
+  .last-place td { background: #4a0000 !important; }
+  .last-place td:first-child { background: #4a0000 !important; border-left-color: #f85149; }
+  .low-score td { background: #2d2b10 !important; }
+  .low-score td:first-child { background: #2d2b10 !important; }
   td:first-child { border-left: 3px solid transparent; }
-  .rank-num { color: var(--text-secondary); }
-  .rank-inline { color: var(--text-secondary); font-size: 12px; font-weight: 700; margin-right: 2px; }
+  .rank-num { color: #8b949e; }
+  .rank-inline { color: #8b949e; font-size: 12px; font-weight: 700; margin-right: 2px; }
   .move-up, .move-down, .move-same { display: inline-block; margin-right: 3px; vertical-align: middle; line-height: 1; }
-  .move-up { color: var(--accent-green); font-size: 14px; }
-  .move-down { color: var(--accent-red); font-size: 14px; }
+  .move-up { color: #3fb950; font-size: 14px; }
+  .move-down { color: #f85149; font-size: 14px; }
   .move-same { font-size: 11px; }
   .chip-badge { font-size: 9px; margin-left: 4px; opacity: 0.85; }
   .chip-badge.mob-only { display: none; }
   .mob-label { display: none; }
   th.sortable { cursor: pointer; user-select: none; }
-  th.sortable:hover { color: var(--text-primary); }
-  .sort-arrow { font-size: 9px; margin-left: 2px; color: var(--accent-blue); }
-  .vc-badge { color: var(--accent-orange); font-size: 11px; margin-left: 3px; }
-  .cap-ok { color: var(--accent-green); font-weight: 600; }
-  .cap-fail { color: var(--accent-orange); font-weight: 600; }
+  th.sortable:hover { color: #e6edf3; }
+  .sort-arrow { font-size: 9px; margin-left: 2px; color: #58a6ff; }
+  .vc-badge { color: #f0883e; font-size: 11px; margin-left: 3px; }
+  .cap-ok { color: #3fb950; font-weight: 600; }
+  .cap-fail { color: #f0883e; font-weight: 600; }
   .player-link { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
-  .player-link:hover { color: var(--accent-blue); }
-  tr.squad-row td { padding: 0; border-top: none; background: var(--bg-body) !important; }
-  tr.squad-row td:first-child { background: var(--bg-body) !important; border-right: none; position: static; }
-  .squad-container { padding: 16px; border-top: 1px solid var(--border); }
-  .squad-section-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
+  .player-link:hover { color: #58a6ff; }
+  tr.squad-row td { padding: 0; border-top: none; background: #0d1117 !important; }
+  tr.squad-row td:first-child { background: #0d1117 !important; border-right: none; position: static; }
+  .squad-container { padding: 16px; border-top: 1px solid #30363d; }
+  .squad-section-label { font-size: 11px; color: #8b949e; margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
   .squad-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-  .player-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; width: 90px; text-align: center; overflow: hidden; flex-shrink: 0; }
+  .player-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; width: 90px; text-align: center; overflow: hidden; flex-shrink: 0; }
   .player-card.is-captain { border-color: #ffd700; box-shadow: 0 0 6px rgba(255,215,0,0.3); }
   .player-card.is-vc-active { border-color: #c0c0c0; box-shadow: 0 0 6px rgba(192,192,192,0.3); }
   .player-card.is-bench { opacity: 0.55; }
-  .player-card-shirt { padding: 8px 0 4px; background: var(--bg-header); height: 60px; display: flex; align-items: center; justify-content: center; }
-  .player-card-shirt img { height: 46px; width: auto; object-fit: contain; }
-  .player-card-shirt-fallback { font-size: 28px; }
-  .player-card-name { font-size: 10px; font-weight: 600; padding: 4px 3px 2px; white-space: normal; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; height: 28px; display: flex; align-items: center; justify-content: center; }
-  .player-card-pts { font-size: 15px; font-weight: 700; padding: 2px 4px 4px; color: var(--accent-green); }
-  .player-card-pts.zero { color: var(--text-secondary); }
-  .player-card-pts.negative { color: var(--accent-red); }
-  .player-card-badge { font-size: 9px; padding: 2px 4px; background: #ffd700; color: #000; font-weight: 700; }
+  .player-card-shirt { padding: 6px 0 2px; background: #1c2128; height: 66px; display: flex; align-items: center; justify-content: center; position: relative; }
+  .player-card-shirt img { height: 54px; width: auto; object-fit: contain; }
+  .player-card-shirt-fallback { font-size: 32px; }
+  .player-card-badge { position: absolute; top: 3px; left: 3px; font-size: 8px; padding: 1px 4px; background: #ffd700; color: #000; font-weight: 700; border-radius: 3px; line-height: 1.3; }
   .player-card-badge.vc-badge-card { background: #c0c0c0; }
-  .player-card-badge-spacer { height: 18px; }
-  .squad-loading { color: var(--text-secondary); font-size: 13px; padding: 20px; text-align: center; }
-  .admin-panel { display: none; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+  .player-card-name { font-size: 10px; font-weight: 600; padding: 3px 3px 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; background: #21262d; }
+  .player-card-pts { font-size: 14px; font-weight: 700; padding: 1px 4px 3px; color: #3fb950; background: #21262d; }
+  .player-card-pts.zero { color: #8b949e; }
+  .player-card-pts.negative { color: #f85149; }
+  .squad-loading { color: #8b949e; font-size: 13px; padding: 20px; text-align: center; }
+  .admin-panel { display: none; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
   .admin-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
-  .admin-input { background: var(--bg-body); border: 1px solid var(--border); color: var(--text-primary); padding: 7px 12px; border-radius: 6px; font-size: 13px; }
-  .btn-green { background: var(--btn-green); border: 1px solid var(--btn-green-hover); color: #fff; padding: 7px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-  .btn-green:hover { background: var(--btn-green-hover); }
-  .btn-green:disabled { background: var(--bg-input); border-color: #30363d; color: var(--text-secondary); cursor: not-allowed; }
-  .status-msg { font-size: 13px; margin-top: 8px; color: var(--text-secondary); }
-  .status-msg.ok { color: var(--accent-green); }
-  .status-msg.err { color: var(--accent-red); }
-  .admin-section-label { color: var(--text-secondary); font-size: 12px; margin-bottom: 6px; }
-  .divider { border-top: 1px solid var(--border); margin: 14px 0; }
-  .loading { padding: 40px; text-align: center; color: var(--text-secondary); }
-  .auto-refresh-indicator { font-size: 11px; color: var(--accent-green); }
-  .pool-footer { padding: 12px 16px; background: var(--bg-header); border-top: 2px solid var(--border); font-size: 13px; color: var(--text-secondary); }
-  .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--modal-overlay); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+  .admin-input { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 7px 12px; border-radius: 6px; font-size: 13px; }
+  .btn-green { background: #238636; border: 1px solid #2ea043; color: #fff; padding: 7px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .btn-green:hover { background: #2ea043; }
+  .btn-green:disabled { background: #21262d; border-color: #30363d; color: #8b949e; cursor: not-allowed; }
+  .status-msg { font-size: 13px; margin-top: 8px; color: #8b949e; }
+  .status-msg.ok { color: #3fb950; }
+  .status-msg.err { color: #f85149; }
+  .admin-section-label { color: #8b949e; font-size: 12px; margin-bottom: 6px; }
+  .divider { border-top: 1px solid #30363d; margin: 14px 0; }
+  .loading { padding: 40px; text-align: center; color: #8b949e; }
+  .auto-refresh-indicator { font-size: 11px; color: #3fb950; }
+  .pool-footer { padding: 12px 16px; background: #1c2128; border-top: 2px solid #30363d; font-size: 13px; color: #8b949e; }
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
   .modal-overlay.active { display: flex; }
-  .modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
-  .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-  .modal-title { font-size: 16px; font-weight: 600; color: var(--accent-blue); }
-  .modal-close { background: none; border: none; color: var(--text-secondary); font-size: 20px; cursor: pointer; padding: 0 4px; }
-  .modal-close:hover { color: var(--text-primary); }
-  .modal-chart-tabs { display: flex; gap: 4px; padding: 12px 16px; background: var(--bg-header); border-bottom: 1px solid var(--border); }
-  .modal-tab { padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text-secondary); border: 1px solid var(--border); }
-  .modal-tab.active { background: var(--tab-active); color: #fff; border-color: var(--tab-active); }
+  .modal { background: #161b22; border: 1px solid #30363d; border-radius: 12px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+  .modal-header { padding: 16px 20px; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; }
+  .modal-title { font-size: 16px; font-weight: 600; color: #58a6ff; }
+  .modal-close { background: none; border: none; color: #8b949e; font-size: 20px; cursor: pointer; padding: 0 4px; }
+  .modal-close:hover { color: #e6edf3; }
+  .modal-chart-tabs { display: flex; gap: 4px; padding: 12px 16px; background: #1c2128; border-bottom: 1px solid #30363d; }
+  .modal-tab { padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; color: #8b949e; border: 1px solid #30363d; }
+  .modal-tab.active { background: #1f6feb; color: #fff; border-color: #1f6feb; }
   .modal-chart-container { padding: 20px; }
 
-  .squad-mobile { display: none; }
-
-  /* ===== 手機版陣容卡片（已修復 iOS display:contents bug）===== */
+  /* ===== 手機版陣容卡片 ===== */
   @media (max-width: 700px) {
-    .squad-desktop { display: none; }
-    .squad-mobile { display: block; }
     .squad-container { padding: 4px; width: 100%; max-width: 100%; overflow: hidden; box-sizing: border-box; }
-    .squad-mobile .squad-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 2px; }
+    .squad-section-label { display: none; }
+    .squad-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; margin-bottom: 0; }
     .player-card { width: auto; border-radius: 3px; border-width: 1px; }
     .player-card.is-bench { opacity: 0.45; }
-    .player-card-shirt { padding: 2px 0 1px; height: 30px; }
-    .player-card-shirt img { height: 24px; }
-    .player-card-shirt-fallback { font-size: 15px; }
-    .player-card-name { font-size: 7px; padding: 1px 1px 0; white-space: nowrap; height: auto; display: block; }
+    .player-card-shirt { padding: 2px 0 1px; height: 34px; }
+    .player-card-shirt img { height: 28px; }
+    .player-card-shirt-fallback { font-size: 17px; }
+    .player-card-badge { font-size: 5px; padding: 1px 2px; top: 1px; left: 1px; border-radius: 2px; }
+    .player-card-name { font-size: 7px; padding: 1px 1px 0; }
     .player-card-pts { font-size: 10px; padding: 0 1px 2px; }
-    .player-card-badge { font-size: 6px; padding: 1px 2px; }
-    .player-card-badge-spacer { height: 9px; }
     /* 手機版升跌：CSS shapes 覆蓋桌面版 text */
     .move-up, .move-down, .move-same { font-size: 0; width: 0; height: 0; overflow: hidden; }
     .move-up { border-left: 3px solid transparent; border-right: 3px solid transparent; border-bottom: 4px solid #3fb950; }
     .move-down { border-left: 3px solid transparent; border-right: 3px solid transparent; border-top: 4px solid #f85149; }
-    .move-same { width: 4px; height: 4px; border-radius: 50%; background: var(--accent-blue); }
+    .move-same { width: 4px; height: 4px; border-radius: 50%; background: #58a6ff; }
   }
 </style>
 </head>
@@ -186,7 +137,6 @@
   <div class="header-right">
     <span class="auto-refresh-indicator" id="refresh-indicator"></span>
     <span class="last-updated" id="last-updated">載入中...</span>
-    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
     <button class="admin-toggle" onclick="toggleAdmin()">🔧 更新</button>
   </div>
 </div>
@@ -223,7 +173,7 @@
     <div class="admin-section-label">批量補跑（每次最多 8 個 GW）</div>
     <div class="admin-row">
       <input type="number" class="admin-input" id="batch-from" placeholder="由" min="1" max="38" style="width:70px">
-      <span style="color:var(--text-secondary)">–</span>
+      <span style="color:#8b949e">–</span>
       <input type="number" class="admin-input" id="batch-to" placeholder="至" min="1" max="38" style="width:70px">
       <button class="btn-green" onclick="batchUpdate()" id="batch-btn">📦 批量跑</button>
     </div>
@@ -276,55 +226,56 @@
 </div>
 
 <script>
-const SUPABASE_URL = 'https://ucwsinzfpvjzdeqncjqc.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjd3NpbnpmcHZqemRlcW5janFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNzAzODUsImV4cCI6MjA4OTc0NjM4NX0.CncnodPpTasZlOaw4ueZDyM4lSdxkOe51PkJ1DtHOZY';
-const ADMIN_PASSWORD = '1111';
-const LEAGUE_ID = 1406714;
-const PLAYER_MAP = {
-  "lai's_dream": 3818341, "Legend Son": 879948, "叒cap撚錯人": 10037,
-  "達蛇的最後探戈": 901186, "和波照YEAH！": 1394163,
-  "Arne slot lalalalala": 3775889, "利記海鮮": 5281742, "來都來了": 6297083
+var SUPABASE_URL = 'https://ucwsinzfpvjzdeqncjqc.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjd3NpbnpmcHZqemRlcW5janFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNzAzODUsImV4cCI6MjA4OTc0NjM4NX0.CncnodPpTasZlOaw4ueZDyM4lSdxkOe51PkJ1DtHOZY';
+var ADMIN_PASSWORD = '1111';
+var LEAGUE_ID = 1406714;
+var PLAYER_MAP = {
+  "lai's_dream": 3818341, "Legend Son": 879948, "\u53d2cap\u649a\u932f\u4eba": 10037,
+  "\u9054\u86c7\u7684\u6700\u5f8c\u63a2\u6208": 901186, "\u548c\u6ce2\u7167YEAH\uff01": 1394163,
+  "Arne slot lalalalala": 3775889, "\u5229\u8a18\u6d77\u9bae": 5281742, "\u4f86\u90fd\u4f86\u4e86": 6297083
 };
-const PLAYER_ORDER = Object.keys(PLAYER_MAP);
-const PLAYER_COLORS = ['#58a6ff','#3fb950','#f0883e','#bc8cff','#ff7b72','#ffa657','#79c0ff','#56d364'];
-const CHIP_TC_KEYS = ['triple_captain', '3xc'];
-const CHIP_DISPLAY = {
-  'triple_captain': '👑 TC', '3xc': '👑 TC',
-  'bboost': '🚀 BB', 'wildcard': '🔄 WC', 'freehit': '🆓 FH'
+var PLAYER_ORDER = Object.keys(PLAYER_MAP);
+var PLAYER_COLORS = ['#58a6ff','#3fb950','#f0883e','#bc8cff','#ff7b72','#ffa657','#79c0ff','#56d364'];
+var CHIP_TC_KEYS = ['triple_captain', '3xc'];
+var CHIP_DISPLAY = {
+  'triple_captain': '\ud83d\udc51 TC', '3xc': '\ud83d\udc51 TC',
+  'bboost': '\ud83d\ude80 BB', 'wildcard': '\ud83d\udd04 WC', 'freehit': '\ud83c\udd93 FH'
 };
 
-let allResults = [], allCapLog = [], latestGW = null;
-let currentGW = null;
-let autoRefreshTimer = null, refreshCountdown = 300;
-let modalChart = null, currentModalPlayer = null, currentModalTab = 'penalty';
-let elementData = {};
-let currentSort = { key: 'cumul_net_points', dir: 'desc' };
-const squadCache = {};
+var allResults = [], allCapLog = [], latestGW = null;
+var currentGW = null;
+var autoRefreshTimer = null, refreshCountdown = 300;
+var modalChart = null, currentModalPlayer = null, currentModalTab = 'penalty';
+var elementData = {};
+var currentSort = { key: 'cumul_net_points', dir: 'desc' };
+var squadCache = {};
 
-async function supabaseGet(table, query = '') {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+async function supabaseGet(table, query) {
+  if (!query) query = '';
+  var res = await fetch(SUPABASE_URL + '/rest/v1/' + table + query, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
   });
   return res.json();
 }
 
 async function supabaseUpsert(table, data) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=gw,entry_id`, {
+  var res = await fetch(SUPABASE_URL + '/rest/v1/' + table + '?on_conflict=gw,entry_id', {
     method: 'POST',
     headers: {
-      'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY,
       'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal'
     },
     body: JSON.stringify(data)
   });
-  if (!res.ok) { const err = await res.text(); throw new Error(`Supabase 寫入失敗：${err}`); }
+  if (!res.ok) { var err = await res.text(); throw new Error('Supabase \u5beb\u5165\u5931\u6557\uff1a' + err); }
   return true;
 }
 
 async function fetchFPL(path) {
-  const res = await fetch(
-    `https://ucwsinzfpvjzdeqncjqc.supabase.co/functions/v1/bright-processor?path=${encodeURIComponent(path)}`,
-    { headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+  var res = await fetch(
+    'https://ucwsinzfpvjzdeqncjqc.supabase.co/functions/v1/bright-processor?path=' + encodeURIComponent(path),
+    { headers: { 'Authorization': 'Bearer ' + SUPABASE_KEY } }
   );
   return JSON.parse(await res.text());
 }
@@ -335,24 +286,26 @@ async function loadData() {
   if (!Array.isArray(allResults)) allResults = [];
   if (!Array.isArray(allCapLog)) allCapLog = [];
 
-  const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
+  var gwSet = {}; allResults.forEach(function(r){ gwSet[r.gw] = 1; });
+  var gws = Object.keys(gwSet).map(Number).sort(function(a,b){ return a-b; });
+
   if (gws.length > 0) {
     latestGW = gws[gws.length - 1];
     if (!currentGW) currentGW = latestGW;
-    const sel = document.getElementById('gw-select');
-    sel.innerHTML = '<option value="">-- 揀 GW --</option>' + gws.map(g => `<option value="${g}" ${g === currentGW ? 'selected' : ''}>GW${g}</option>`).join('');
+    var sel = document.getElementById('gw-select');
+    sel.innerHTML = '<option value="">-- \u63c0 GW --</option>' + gws.map(function(g){ return '<option value="'+g+'" '+(g === currentGW ? 'selected' : '')+'>GW'+g+'</option>'; }).join('');
     document.getElementById('gw-bar').style.display = 'flex';
-    const latest = allResults.reduce((a,b) => a.updated_at > b.updated_at ? a : b, allResults[0]);
-    document.getElementById('last-updated').textContent = `更新：${new Date(latest.updated_at).toLocaleTimeString('zh-HK')}`;
+    var latest = allResults.reduce(function(a,b){return a.updated_at > b.updated_at ? a : b}, allResults[0]);
+    document.getElementById('last-updated').textContent = '\u66f4\u65b0\uff1a' + new Date(latest.updated_at).toLocaleTimeString('zh-HK');
   } else {
-    document.getElementById('last-updated').textContent = '未有數據';
+    document.getElementById('last-updated').textContent = '\u672a\u6709\u6578\u64da';
   }
 
   try {
-    const boot = await fetchFPL('bootstrap-static/');
-    const teamCodeMap = {};
-    (boot.teams || []).forEach(t => { teamCodeMap[t.id] = t.code; });
-    (boot.elements || []).forEach(el => {
+    var boot = await fetchFPL('bootstrap-static/');
+    var teamCodeMap = {};
+    (boot.teams || []).forEach(function(t){ teamCodeMap[t.id] = t.code; });
+    (boot.elements || []).forEach(function(el){
       elementData[el.id] = { name: el.web_name, pos: el.element_type, teamCode: teamCodeMap[el.team] || 0 };
     });
   } catch(e) {}
@@ -368,133 +321,102 @@ async function loadData() {
 
 async function preloadSquads(gw) {
   if (!gw) return;
-  let liveData = null;
-  try { liveData = await fetchFPL(`event/${gw}/live/`); } catch(e) { return; }
-  const liveMap = {};
-  (liveData.elements || []).forEach(e => { liveMap[e.id] = (e.stats && e.stats.total_points) || 0; });
-  for (const name of PLAYER_ORDER) {
-    const entryId = PLAYER_MAP[name];
-    const cacheKey = `${entryId}_${gw}`;
+  var liveData = null;
+  try { liveData = await fetchFPL('event/' + gw + '/live/'); } catch(e) { return; }
+  var liveMap = {};
+  (liveData.elements || []).forEach(function(e){ liveMap[e.id] = (e.stats && e.stats.total_points) || 0; });
+  for (var i = 0; i < PLAYER_ORDER.length; i++) {
+    var name = PLAYER_ORDER[i];
+    var entryId = PLAYER_MAP[name];
+    var cacheKey = entryId + '_' + gw;
     if (squadCache[cacheKey]) continue;
     try {
-      const picksRes = await fetchFPL(`entry/${entryId}/event/${gw}/picks/`);
-      squadCache[cacheKey] = { picks: picksRes.picks || [], liveMap };
+      var picksRes = await fetchFPL('entry/' + entryId + '/event/' + gw + '/picks/');
+      squadCache[cacheKey] = { picks: picksRes.picks || [], liveMap: liveMap };
     } catch(e) {}
-    await new Promise(r => setTimeout(r, 200));
+    await new Promise(function(r){ setTimeout(r, 200); });
   }
 }
 
 function shirtImg(teamCode, isBench) {
-  if (!teamCode) return `<span class="player-card-shirt-fallback">👕</span>`;
-  const url = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}${isBench ? '_1' : ''}-110.png`;
-  return `<img src="${url}" onerror="this.parentNode.innerHTML='<span class=\\'player-card-shirt-fallback\\'>👕</span>'" alt="">`;
+  if (!teamCode) return '<span class="player-card-shirt-fallback">\ud83d\udc55</span>';
+  var url = 'https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_' + teamCode + (isBench ? '_1' : '') + '-110.png';
+  return '<img src="' + url + '" onerror="this.parentNode.innerHTML=\'<span class=player-card-shirt-fallback>\ud83d\udc55</span>\'" alt="">';
 }
 
-// multiplier: 2 (normal) or 3 (TC)
-// usedVC: true = VC 被用做有效隊長
 function buildSquadHTML(picks, liveMap, isBench, usedVC, multiplier, isBB) {
-  return picks.map(p => {
-    const el = elementData[p.element] || { name: `#${p.element}`, pos: 1, teamCode: 0 };
-    const rawPts = liveMap[p.element] !== undefined ? liveMap[p.element] : null;
-    const isCap = p.is_captain;
-    const isVC = p.is_vice_captain;
-
-    // 判斷呢個球員係咪有效隊長（要乘分）
-    const isEffectiveCaptain = (!usedVC && isCap) || (usedVC && isVC);
-    // 計算顯示分數：有效隊長乘 multiplier
-    let displayPts;
-    if (rawPts === null) {
-      displayPts = '-';
-    } else if (isEffectiveCaptain && !isBench) {
-      displayPts = rawPts * multiplier;
-    } else {
-      displayPts = rawPts;
-    }
-
-    const ptsClass = displayPts === '-' ? '' : displayPts > 0 ? '' : displayPts < 0 ? 'negative' : 'zero';
-
-    let cardClass = 'player-card';
+  return picks.map(function(p) {
+    var el = elementData[p.element] || { name: '#' + p.element, pos: 1, teamCode: 0 };
+    var rawPts = liveMap[p.element] !== undefined ? liveMap[p.element] : null;
+    var isCap = p.is_captain;
+    var isVC = p.is_vice_captain;
+    var isEffectiveCaptain = (!usedVC && isCap) || (usedVC && isVC);
+    var displayPts;
+    if (rawPts === null) { displayPts = '-'; }
+    else if (isEffectiveCaptain && !isBench) { displayPts = rawPts * multiplier; }
+    else { displayPts = rawPts; }
+    var ptsClass = displayPts === '-' ? '' : displayPts > 0 ? '' : displayPts < 0 ? 'negative' : 'zero';
+    var cardClass = 'player-card';
     if (!usedVC && isCap) cardClass += ' is-captain';
     if (usedVC && isVC) cardClass += ' is-vc-active';
     if (isBench && !isBB) cardClass += ' is-bench';
-
-    let badge = '<div class="player-card-badge-spacer"></div>';
-    if (!usedVC && isCap) {
-      badge = `<div class="player-card-badge">© C</div>`;
-    } else if (usedVC && isVC) {
-      badge = `<div class="player-card-badge vc-badge-card">𝓥 VC</div>`;
-    }
-
-    return `<div class="${cardClass}">
-      <div class="player-card-shirt">${shirtImg(el.teamCode, isBench && !isBB)}</div>
-      <div class="player-card-name">${el.name}</div>
-      <div class="player-card-pts ${ptsClass}">${displayPts}</div>
-      ${badge}
-    </div>`;
+    var badge = '';
+    if (!usedVC && isCap) { badge = '<div class="player-card-badge">C</div>'; }
+    else if (usedVC && isVC) { badge = '<div class="player-card-badge vc-badge-card">V</div>'; }
+    return '<div class="' + cardClass + '">' +
+      '<div class="player-card-shirt">' + badge + shirtImg(el.teamCode, isBench && !isBB) + '</div>' +
+      '<div class="player-card-name">' + el.name + '</div>' +
+      '<div class="player-card-pts ' + ptsClass + '">' + displayPts + '</div>' +
+      '</div>';
   }).join('');
 }
 
 async function toggleSquad(entryId, gw, usedVC) {
-  const squadRowId = `squad-${entryId}`;
-  const existingRow = document.getElementById(squadRowId);
-  const dataRow = document.querySelector(`tr.data-row[data-entry="${entryId}"]`);
-
-  if (existingRow) {
-    existingRow.remove();
-    if (dataRow) dataRow.classList.remove('expanded');
-    return;
-  }
-
+  var squadRowId = 'squad-' + entryId;
+  var existingRow = document.getElementById(squadRowId);
+  var dataRow = document.querySelector('tr.data-row[data-entry="' + entryId + '"]');
+  if (existingRow) { existingRow.remove(); if (dataRow) dataRow.classList.remove('expanded'); return; }
   if (dataRow) dataRow.classList.add('expanded');
-  const colCount = dataRow ? dataRow.cells.length : 12;
-  const squadRow = document.createElement('tr');
+  var colCount = dataRow ? dataRow.cells.length : 12;
+  var squadRow = document.createElement('tr');
   squadRow.id = squadRowId;
   squadRow.className = 'squad-row';
+  var cacheKey = entryId + '_' + gw;
+  var capEntry = allCapLog.find(function(c){ return Number(c.entry_id) === Number(entryId) && c.gw === gw; });
+  var chipRaw = capEntry ? (capEntry.chip || '') : '';
+  var multiplier = CHIP_TC_KEYS.includes(chipRaw) ? 3 : 2;
+  var isBB = chipRaw === 'bboost';
 
-  const cacheKey = `${entryId}_${gw}`;
-
-  // 從 cap_log 拎 chip 判斷 multiplier
-  const capEntry = allCapLog.find(c => Number(c.entry_id) === Number(entryId) && c.gw === gw);
-  const chipRaw = capEntry ? (capEntry.chip || '') : '';
-  const multiplier = CHIP_TC_KEYS.includes(chipRaw) ? 3 : 2;
-
-  const isBB = chipRaw === 'bboost';
-
+  /* ★ iOS 修正：正選+後備放入同一個 squad-grid，手機版用 grid repeat(8,1fr) 確保上8下7 */
   function renderSquadContent(picks, liveMap) {
-    const starters = picks.filter(p => p.position <= 11);
-    const bench = picks.filter(p => p.position > 11);
-    return `
-      <div class="squad-desktop">
-        <div class="squad-section-label">正選</div>
-        <div class="squad-grid">${buildSquadHTML(starters, liveMap, false, usedVC, multiplier, isBB)}</div>
-        <div class="squad-section-label">後備</div>
-        <div class="squad-grid">${buildSquadHTML(bench, liveMap, true, usedVC, multiplier, isBB)}</div>
-      </div>
-      <div class="squad-mobile">
-        <div class="squad-grid">${buildSquadHTML(starters, liveMap, false, usedVC, multiplier, isBB)}${buildSquadHTML(bench, liveMap, true, usedVC, multiplier, isBB)}</div>
-      </div>
-    `;
+    var starters = picks.filter(function(p){ return p.position <= 11; });
+    var bench = picks.filter(function(p){ return p.position > 11; });
+    return '<div class="squad-grid">' +
+      buildSquadHTML(starters, liveMap, false, usedVC, multiplier, isBB) +
+      buildSquadHTML(bench, liveMap, true, usedVC, multiplier, isBB) +
+    '</div>';
   }
 
   if (squadCache[cacheKey]) {
-    const { picks, liveMap } = squadCache[cacheKey];
-    squadRow.innerHTML = `<td colspan="${colCount}"><div class="squad-container">${renderSquadContent(picks, liveMap)}</div></td>`;
+    var d = squadCache[cacheKey];
+    squadRow.innerHTML = '<td colspan="' + colCount + '"><div class="squad-container">' + renderSquadContent(d.picks, d.liveMap) + '</div></td>';
     if (dataRow) dataRow.insertAdjacentElement('afterend', squadRow);
   } else {
-    squadRow.innerHTML = `<td colspan="${colCount}"><div class="squad-container"><div class="squad-loading">⏳ 載入陣容...</div></div></td>`;
+    squadRow.innerHTML = '<td colspan="' + colCount + '"><div class="squad-container"><div class="squad-loading">\u23f3 \u8f09\u5165\u9663\u5bb9...</div></div></td>';
     if (dataRow) dataRow.insertAdjacentElement('afterend', squadRow);
     try {
-      const [picksRes, liveRes] = await Promise.all([
-        fetchFPL(`entry/${entryId}/event/${gw}/picks/`),
-        fetchFPL(`event/${gw}/live/`)
+      var results = await Promise.all([
+        fetchFPL('entry/' + entryId + '/event/' + gw + '/picks/'),
+        fetchFPL('event/' + gw + '/live/')
       ]);
-      const liveMap = {};
-      (liveRes.elements || []).forEach(e => { liveMap[e.id] = (e.stats && e.stats.total_points) || 0; });
-      const picks = picksRes.picks || [];
-      squadCache[cacheKey] = { picks, liveMap };
+      var picksRes = results[0], liveRes = results[1];
+      var liveMap = {};
+      (liveRes.elements || []).forEach(function(e){ liveMap[e.id] = (e.stats && e.stats.total_points) || 0; });
+      var picks = picksRes.picks || [];
+      squadCache[cacheKey] = { picks: picks, liveMap: liveMap };
       squadRow.querySelector('.squad-container').innerHTML = renderSquadContent(picks, liveMap);
     } catch(e) {
-      squadRow.querySelector('.squad-container').innerHTML = `<div class="squad-loading">❌ 載入失敗</div>`;
+      squadRow.querySelector('.squad-container').innerHTML = '<div class="squad-loading">\u274c \u8f09\u5165\u5931\u6557</div>';
     }
   }
 }
@@ -502,14 +424,14 @@ async function toggleSquad(entryId, gw, usedVC) {
 function startAutoRefresh() {
   if (autoRefreshTimer) clearInterval(autoRefreshTimer);
   refreshCountdown = 300;
-  autoRefreshTimer = setInterval(async () => {
+  autoRefreshTimer = setInterval(async function() {
     refreshCountdown--;
     if (refreshCountdown <= 0) {
-      document.getElementById('refresh-indicator').textContent = '🔄';
+      document.getElementById('refresh-indicator').textContent = '\ud83d\udd04';
       await loadData();
       refreshCountdown = 300;
     } else {
-      document.getElementById('refresh-indicator').textContent = `⏱ ${refreshCountdown}s`;
+      document.getElementById('refresh-indicator').textContent = '\u23f1 ' + refreshCountdown + 's';
     }
   }, 1000);
 }
@@ -532,40 +454,38 @@ function closeModalDirect() {
 
 function switchModalTab(tab) {
   currentModalTab = tab;
-  document.querySelectorAll('.modal-tab').forEach((t, i) => {
+  document.querySelectorAll('.modal-tab').forEach(function(t, i) {
     t.classList.toggle('active', ['penalty','rank'][i] === tab);
   });
   if (currentModalPlayer) renderModalChart(currentModalPlayer, tab);
 }
 
 function renderModalChart(playerName, tab) {
-  const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
-  const labels = gws.map(g => `GW${g}`);
-  const color = PLAYER_COLORS[PLAYER_ORDER.indexOf(playerName)] || '#58a6ff';
-  let data, label;
+  var gwSet = {}; allResults.forEach(function(r){ gwSet[r.gw]=1; });
+  var gws = Object.keys(gwSet).map(Number).sort(function(a,b){return a-b;});
+  var labels = gws.map(function(g){ return 'GW' + g; });
+  var color = PLAYER_COLORS[PLAYER_ORDER.indexOf(playerName)] || '#58a6ff';
+  var data, label;
   if (tab === 'penalty') {
-    data = gws.map(gw => { const r = allResults.find(r => r.player_name === playerName && r.gw === gw); return r ? Math.abs(r.cumul_penalty) : null; });
-    label = '累積罰款';
+    data = gws.map(function(gw){ var r = allResults.find(function(r){ return r.player_name === playerName && r.gw === gw; }); return r ? Math.abs(r.cumul_penalty) : null; });
+    label = '\u7d2f\u7a4d\u7f70\u6b3e';
   } else {
-    data = gws.map(gw => {
-      const gwData = allResults.filter(r => r.gw === gw).sort((a,b) => b.cumul_net_points - a.cumul_net_points);
-      const idx = gwData.findIndex(r => r.player_name === playerName);
+    data = gws.map(function(gw){
+      var gwData = allResults.filter(function(r){ return r.gw === gw; }).sort(function(a,b){ return b.cumul_net_points - a.cumul_net_points; });
+      var idx = gwData.findIndex(function(r){ return r.player_name === playerName; });
       return idx >= 0 ? 9 - (idx + 1) : null;
     });
-    label = '累積總分排名';
+    label = '\u7d2f\u7a4d\u7e3d\u5206\u6392\u540d';
   }
-  const cs = getComputedStyle(document.body);
-  const tickColor = cs.getPropertyValue('--text-secondary').trim();
-  const gridColor = cs.getPropertyValue('--border-inner').trim();
   if (modalChart) { modalChart.destroy(); modalChart = null; }
   modalChart = new Chart(document.getElementById('modal-chart'), {
     type: 'line',
-    data: { labels, datasets: [{ label, data, borderColor: color, backgroundColor: color + '30', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: true }] },
+    data: { labels: labels, datasets: [{ label: label, data: data, borderColor: color, backgroundColor: color + '30', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: true }] },
     options: {
       responsive: true, plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: tickColor, font: { size: 11 } }, grid: { color: gridColor } },
-        y: { ticks: { color: tickColor, font: { size: 11 }, callback: v => tab === 'penalty' ? `$${v}` : `第${9-v}名` }, grid: { color: gridColor }, reverse: false, min: tab === 'rank' ? 1 : undefined, max: tab === 'rank' ? 8 : undefined }
+        x: { ticks: { color: '#8b949e', font: { size: 11 } }, grid: { color: '#21262d' } },
+        y: { ticks: { color: '#8b949e', font: { size: 11 }, callback: function(v){ return tab === 'penalty' ? '$' + v : '\u7b2c' + (9-v) + '\u540d'; } }, grid: { color: '#21262d' }, reverse: false, min: tab === 'rank' ? 1 : undefined, max: tab === 'rank' ? 8 : undefined }
       }
     }
   });
@@ -574,387 +494,396 @@ function renderModalChart(playerName, tab) {
 function renderWeekly(gw) {
   if (!gw) return;
   currentGW = gw;
-  document.getElementById('weekly-title').textContent = `GW${gw} 詳情`;
+  document.getElementById('weekly-title').textContent = 'GW' + gw + ' \u8a73\u60c5';
 
-  const gwTotals = [...new Set(allResults.map(r => r.gw))].map(g => {
-    const d = allResults.filter(r => r.gw === g);
-    return { gw: g, total: d.reduce((s,r) => s + Math.abs(r.total_penalty), 0) };
-  }).sort((a,b) => b.total - a.total);
+  var gwSet = {}; allResults.forEach(function(r){ gwSet[r.gw]=1; });
+  var allGWs = Object.keys(gwSet).map(Number);
+  var gwTotals = allGWs.map(function(g) {
+    var d = allResults.filter(function(r){ return r.gw === g; });
+    return { gw: g, total: d.reduce(function(s,r){ return s + Math.abs(r.total_penalty); }, 0) };
+  }).sort(function(a,b){ return b.total - a.total; });
   if (gwTotals.length && gwTotals[0].gw === gw) {
     document.getElementById('worst-gw-badge').style.display = 'inline';
-    document.getElementById('worst-gw-badge').textContent = '💀 最衰周';
+    document.getElementById('worst-gw-badge').textContent = '\ud83d\udc80 \u6700\u8870\u5468';
   } else {
     document.getElementById('worst-gw-badge').style.display = 'none';
   }
 
-  const gwResults = allResults.filter(r => r.gw === gw);
-  const caps = allCapLog.filter(r => r.gw === gw);
-  if (!gwResults.length) { document.getElementById('weekly-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
+  var gwResults = allResults.filter(function(r){ return r.gw === gw; });
+  var caps = allCapLog.filter(function(r){ return r.gw === gw; });
+  if (!gwResults.length) { document.getElementById('weekly-table').innerHTML = '<div class="loading">\u672a\u6709\u6578\u64da</div>'; return; }
 
-  const minPts = Math.min(...gwResults.map(r => r.gross_points));
+  var minPts = Math.min.apply(null, gwResults.map(function(r){ return r.gross_points; }));
+  var ranked = gwResults.slice().sort(function(a,b){ return b.cumul_net_points - a.cumul_net_points; });
+  var rankMap = {};
+  ranked.forEach(function(r, i){ rankMap[r.player_name] = i + 1; });
 
-  // 排名永遠按累積總分
-  const ranked = [...gwResults].sort((a,b) => b.cumul_net_points - a.cumul_net_points);
-  const rankMap = {};
-  ranked.forEach((r, i) => { rankMap[r.player_name] = i + 1; });
-
-  // 上周排名
-  const prevGWResults = allResults.filter(r => r.gw === gw - 1);
-  const prevRanks = {};
+  var prevGWResults = allResults.filter(function(r){ return r.gw === gw - 1; });
+  var prevRanks = {};
   if (prevGWResults.length) {
-    [...prevGWResults].sort((a,b) => b.cumul_net_points - a.cumul_net_points).forEach((r, i) => {
+    prevGWResults.slice().sort(function(a,b){ return b.cumul_net_points - a.cumul_net_points; }).forEach(function(r, i){
       prevRanks[r.player_name] = i + 1;
     });
   }
 
-  // 顯示排序
-  const sortKey = currentSort.key;
-  const sortDir = currentSort.dir;
-  const data = [...gwResults].sort((a,b) => {
-    let va = a[sortKey], vb = b[sortKey];
+  var sortKey = currentSort.key;
+  var sortDir = currentSort.dir;
+  var data = gwResults.slice().sort(function(a,b) {
+    var va = a[sortKey], vb = b[sortKey];
     if (typeof va === 'string') return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
     return sortDir === 'asc' ? va - vb : vb - va;
   });
 
-  const sortArrow = (key) => {
+  function sortArrow(key) {
     if (currentSort.key !== key) return '';
-    return `<span class="sort-arrow">${currentSort.dir === 'asc' ? '▲' : '▼'}</span>`;
-  };
+    return '<span class="sort-arrow">' + (currentSort.dir === 'asc' ? '\u25b2' : '\u25bc') + '</span>';
+  }
 
-  const tableEl = document.createElement('table');
-  const thead = document.createElement('tr');
-  const cols = [
-    { label: '玩家', mobLabel: '玩家', key: 'player_name', cls: '' },
-    { label: '今周分', mobLabel: 'PT', key: 'gross_points', cls: '' },
-    { label: 'League罰款', mobLabel: '', key: 'league_penalty', cls: 'desk-only' },
-    { label: 'H2H罰款', mobLabel: '', key: 'h2h_penalty', cls: 'desk-only' },
-    { label: '今周$$$$', mobLabel: '$$$', key: 'total_penalty', cls: 'col-important' },
-    { label: '累積罰款', mobLabel: 'Total', key: 'cumul_penalty', cls: 'col-important' },
-    { label: '累積總分', mobLabel: '', key: 'cumul_net_points', cls: 'col-important desk-only' },
-    { label: '隊長', mobLabel: '', key: null, cls: 'desk-only' },
-    { label: '今周Cap分', mobLabel: '', key: null, cls: 'desk-only' },
-    { label: '累積Cap分', mobLabel: '', key: null, cls: 'desk-only' },
-    { label: '成功率', mobLabel: '', key: null, cls: 'desk-only' },
+  var tableEl = document.createElement('table');
+  var thead = document.createElement('tr');
+  var cols = [
+    { label: '\u73a9\u5bb6', mobLabel: '\u73a9\u5bb6', key: 'player_name', cls: '' },
+    { label: '\u4eca\u5468\u5206', mobLabel: 'PT', key: 'gross_points', cls: '' },
+    { label: 'League\u7f70\u6b3e', mobLabel: '', key: 'league_penalty', cls: 'desk-only' },
+    { label: 'H2H\u7f70\u6b3e', mobLabel: '', key: 'h2h_penalty', cls: 'desk-only' },
+    { label: '\u4eca\u5468$$$$', mobLabel: '$$$', key: 'total_penalty', cls: 'col-important' },
+    { label: '\u7d2f\u7a4d\u7f70\u6b3e', mobLabel: 'Total', key: 'cumul_penalty', cls: 'col-important' },
+    { label: '\u7d2f\u7a4d\u7e3d\u5206', mobLabel: '', key: 'cumul_net_points', cls: 'col-important desk-only' },
+    { label: '\u968a\u9577', mobLabel: '', key: null, cls: 'desk-only' },
+    { label: '\u4eca\u5468Cap\u5206', mobLabel: '', key: null, cls: 'desk-only' },
+    { label: '\u7d2f\u7a4dCap\u5206', mobLabel: '', key: null, cls: 'desk-only' },
+    { label: '\u6210\u529f\u7387', mobLabel: '', key: null, cls: 'desk-only' },
     { label: 'Chip', mobLabel: '', key: null, cls: 'desk-only' }
   ];
-  cols.forEach(col => {
-    const th = document.createElement('th');
+  cols.forEach(function(col) {
+    var th = document.createElement('th');
     th.className = col.cls + (col.key ? ' sortable' : '');
     if (col.mobLabel && col.mobLabel !== col.label) {
-      th.innerHTML = `<span class="desk-label">${col.label}</span><span class="mob-label">${col.mobLabel}</span>${sortArrow(col.key)}`;
+      th.innerHTML = '<span class="desk-label">' + col.label + '</span><span class="mob-label">' + col.mobLabel + '</span>' + sortArrow(col.key);
     } else {
-      th.innerHTML = `${col.label}${sortArrow(col.key)}`;
+      th.innerHTML = col.label + sortArrow(col.key);
     }
     if (col.key) {
-      th.addEventListener('click', () => {
-        if (currentSort.key === col.key) currentSort.dir = currentSort.dir === 'desc' ? 'asc' : 'desc';
-        else { currentSort.key = col.key; currentSort.dir = 'desc'; }
-        renderWeekly(gw);
-      });
+      (function(k){
+        th.addEventListener('click', function() {
+          if (currentSort.key === k) currentSort.dir = currentSort.dir === 'desc' ? 'asc' : 'desc';
+          else { currentSort.key = k; currentSort.dir = 'desc'; }
+          renderWeekly(gw);
+        });
+      })(col.key);
     }
     thead.appendChild(th);
   });
   tableEl.appendChild(thead);
 
-  data.forEach(r => {
-    const rank = rankMap[r.player_name];
-    const cap = caps.find(c => Number(c.entry_id) === Number(r.entry_id));
-    const isLast = r.gross_points === minPts;
-    const isLow = r.gross_points < 45 && !isLast;
-    const entryId = PLAYER_MAP[r.player_name];
+  /* ★ 移除「-」號 */
+  function fmt(v) { return '$' + Math.abs(v); }
 
-    let moveHtml = '';
+  data.forEach(function(r) {
+    var rank = rankMap[r.player_name];
+    var cap = caps.find(function(c){ return Number(c.entry_id) === Number(r.entry_id); });
+    var isLast = r.gross_points === minPts;
+    var isLow = r.gross_points < 45 && !isLast;
+    var entryId = PLAYER_MAP[r.player_name];
+
+    var moveHtml = '';
     if (prevRanks[r.player_name]) {
-      const diff = prevRanks[r.player_name] - rank;
-      if (diff > 0) moveHtml = `<span class="move-up">▲</span>`;
-      else if (diff < 0) moveHtml = `<span class="move-down">▼</span>`;
-      else moveHtml = `<span class="move-same">🔵</span>`;
+      var diff = prevRanks[r.player_name] - rank;
+      if (diff > 0) moveHtml = '<span class="move-up">\u25b2</span>';
+      else if (diff < 0) moveHtml = '<span class="move-down">\u25bc</span>';
+      else moveHtml = '<span class="move-same">\ud83d\udd35</span>';
     }
 
-    const usedVC = cap && cap.captain && cap.captain.includes('(VC)');
-    const capDisplayName = cap ? cap.captain.replace(' (VC)', '') : '-';
-    const chip = cap ? (CHIP_DISPLAY[cap.chip] || '') : '';
-    const chipHtml = chip ? `<span class="chip-badge mob-only">${chip}</span>` : '';
-    const capPts = cap ? cap.captain_pts : '-';
-    const capOK = cap ? cap.cap_ok : null;
+    var usedVC = cap && cap.captain && cap.captain.includes('(VC)');
+    var capDisplayName = cap ? cap.captain.replace(' (VC)', '') : '-';
+    var chip = cap ? (CHIP_DISPLAY[cap.chip] || '') : '';
+    var chipHtml = chip ? '<span class="chip-badge mob-only">' + chip + '</span>' : '';
+    var capPts = cap ? cap.captain_pts : '-';
+    var capOK = cap ? cap.cap_ok : null;
 
-    let capNameHtml = '-';
+    var capNameHtml = '-';
     if (cap) {
-      const colorClass = capOK === 1 ? 'cap-ok' : 'cap-fail';
-      const vcLabel = usedVC ? '<span class="vc-badge">(VC)</span>' : '';
-      capNameHtml = `<span class="${colorClass}">${capDisplayName}${vcLabel}</span>`;
+      var colorClass = capOK === 1 ? 'cap-ok' : 'cap-fail';
+      var vcLabel = usedVC ? '<span class="vc-badge">(VC)</span>' : '';
+      capNameHtml = '<span class="' + colorClass + '">' + capDisplayName + vcLabel + '</span>';
     }
 
-    const allCapsForPlayer = allCapLog.filter(c => c.player_name === r.player_name && c.gw <= gw);
-    const ok = allCapsForPlayer.filter(c => c.cap_ok === 1).length;
-    const total = allCapsForPlayer.length;
-    const rate = total > 0 ? (ok/total*100).toFixed(0) + '%' : '-';
-    const cumulCapPts = allCapsForPlayer.reduce((s,c) => s + (c.captain_pts || 0), 0);
-    const fmt = v => v === 0 ? '$0' : `$${Math.abs(v)}`;
+    var allCapsForPlayer = allCapLog.filter(function(c){ return c.player_name === r.player_name && c.gw <= gw; });
+    var ok = allCapsForPlayer.filter(function(c){ return c.cap_ok === 1; }).length;
+    var total = allCapsForPlayer.length;
+    var rate = total > 0 ? (ok/total*100).toFixed(0) + '%' : '-';
+    var cumulCapPts = allCapsForPlayer.reduce(function(s,c){ return s + (c.captain_pts || 0); }, 0);
 
-    const tr = document.createElement('tr');
-    tr.className = `data-row${isLast ? ' last-place' : isLow ? ' low-score' : ''}`;
-    tr.dataset.entry = entryId;
-    tr.dataset.gw = gw;
-    tr.innerHTML = `
-      <td>${moveHtml}<span class="rank-inline">${rank}</span><strong class="player-link" data-name="${r.player_name}">${r.player_name}</strong>${chipHtml}</td>
-      <td>${r.gross_points}</td>
-      <td class="desk-only">${fmt(r.league_penalty)}</td>
-      <td class="desk-only">${fmt(r.h2h_penalty)}</td>
-      <td class="col-important">${fmt(r.total_penalty)}</td>
-      <td class="col-important">${fmt(r.cumul_penalty)}</td>
-      <td class="col-important desk-only">${r.cumul_net_points}</td>
-      <td class="desk-only">${capNameHtml}</td>
-      <td class="desk-only">${capPts}</td>
-      <td class="desk-only">${cumulCapPts}</td>
-      <td class="desk-only">${rate}</td>
-      <td class="desk-only">${chip}</td>
-    `;
+    var tr = document.createElement('tr');
+    tr.className = 'data-row' + (isLast ? ' last-place' : isLow ? ' low-score' : '');
+    tr.setAttribute('data-entry', entryId);
+    tr.setAttribute('data-gw', gw);
+    tr.innerHTML =
+      '<td>' + moveHtml + '<span class="rank-inline">' + rank + '</span><strong class="player-link" data-name="' + r.player_name + '">' + r.player_name + '</strong>' + chipHtml + '</td>' +
+      '<td>' + r.gross_points + '</td>' +
+      '<td class="desk-only">' + fmt(r.league_penalty) + '</td>' +
+      '<td class="desk-only">' + fmt(r.h2h_penalty) + '</td>' +
+      '<td class="col-important">' + fmt(r.total_penalty) + '</td>' +
+      '<td class="col-important">' + fmt(r.cumul_penalty) + '</td>' +
+      '<td class="col-important desk-only">' + r.cumul_net_points + '</td>' +
+      '<td class="desk-only">' + capNameHtml + '</td>' +
+      '<td class="desk-only">' + capPts + '</td>' +
+      '<td class="desk-only">' + cumulCapPts + '</td>' +
+      '<td class="desk-only">' + rate + '</td>' +
+      '<td class="desk-only">' + chip + '</td>';
 
-    tr.querySelector('.player-link').addEventListener('click', e => {
+    tr.querySelector('.player-link').addEventListener('click', function(e) {
       e.stopPropagation();
       showPlayerChart(r.player_name);
     });
-    tr.addEventListener('click', () => toggleSquad(entryId, gw, usedVC));
+    (function(eid, g, vc){ tr.addEventListener('click', function(){ toggleSquad(eid, g, vc); }); })(entryId, gw, usedVC);
     tableEl.appendChild(tr);
   });
 
-  const totalPool = gwResults.reduce((s,r) => s + Math.abs(r.cumul_penalty), 0);
-  const wrapper = document.getElementById('weekly-table');
+  var totalPool = gwResults.reduce(function(s,r){ return s + Math.abs(r.cumul_penalty); }, 0);
+  var wrapper = document.getElementById('weekly-table');
   wrapper.innerHTML = '';
   wrapper.appendChild(tableEl);
-  const footer = document.createElement('div');
+  var footer = document.createElement('div');
   footer.className = 'pool-footer';
-  footer.innerHTML = `💰 截至 GW${gw} 全體累積罰款：<strong style="color:var(--accent-red);font-size:15px;">$${totalPool}</strong>`;
+  footer.innerHTML = '\ud83d\udcb0 \u622a\u81f3 GW' + gw + ' \u5168\u9ad4\u7d2f\u7a4d\u7f70\u6b3e\uff1a<strong style="color:#f85149;font-size:15px;">$' + totalPool + '</strong>';
   wrapper.appendChild(footer);
 }
 
 function renderSummaryTable() {
-  const data = PLAYER_ORDER.map(name => {
-    const rows = allResults.filter(r => r.player_name === name).sort((a,b) => b.gw - a.gw);
-    const latest = rows[0];
-    return { name, penalty: latest ? latest.cumul_penalty : 0, pts: latest ? latest.cumul_net_points : 0 };
-  }).sort((a,b) => a.penalty - b.penalty);
-  if (!data.some(d => d.pts > 0)) { document.getElementById('summary-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
-  const totalPool = data.reduce((s,p) => s + Math.abs(p.penalty), 0);
-  let html = '<table><tr><th>#</th><th>玩家</th><th class="col-important">累積罰款</th><th class="col-important">累積總分</th></tr>';
-  data.forEach((p, i) => {
-    html += `<tr><td class="rank-num">${i+1}</td>
-      <td><strong class="player-link" data-name="${p.name}" onclick="showPlayerChart(this.dataset.name)">${p.name}</strong></td>
-      <td class="col-important">${p.penalty < 0 ? `$${Math.abs(p.penalty)}` : '$0'}</td>
-      <td class="col-important">${p.pts}</td></tr>`;
+  var data = PLAYER_ORDER.map(function(name) {
+    var rows = allResults.filter(function(r){ return r.player_name === name; }).sort(function(a,b){ return b.gw - a.gw; });
+    var latest = rows[0];
+    return { name: name, penalty: latest ? latest.cumul_penalty : 0, pts: latest ? latest.cumul_net_points : 0 };
+  }).sort(function(a,b){ return a.penalty - b.penalty; });
+  if (!data.some(function(d){ return d.pts > 0; })) { document.getElementById('summary-table').innerHTML = '<div class="loading">\u672a\u6709\u6578\u64da</div>'; return; }
+  var totalPool = data.reduce(function(s,p){ return s + Math.abs(p.penalty); }, 0);
+  var html = '<table><tr><th>#</th><th>\u73a9\u5bb6</th><th class="col-important">\u7d2f\u7a4d\u7f70\u6b3e</th><th class="col-important">\u7d2f\u7a4d\u7e3d\u5206</th></tr>';
+  data.forEach(function(p, i) {
+    /* ★ 移除「-」號 */
+    html += '<tr><td class="rank-num">' + (i+1) + '</td>' +
+      '<td><strong class="player-link" data-name="' + p.name + '" onclick="showPlayerChart(this.dataset.name)">' + p.name + '</strong></td>' +
+      '<td class="col-important">$' + Math.abs(p.penalty) + '</td>' +
+      '<td class="col-important">' + p.pts + '</td></tr>';
   });
   html += '</table>';
   document.getElementById('summary-table').innerHTML = html;
-  const footer = document.createElement('div');
+  var footer = document.createElement('div');
   footer.className = 'pool-footer';
-  footer.innerHTML = `💰 全季累積罰款總額：<strong style="color:var(--accent-red);font-size:15px;">$${totalPool}</strong>`;
+  footer.innerHTML = '\ud83d\udcb0 \u5168\u5b63\u7d2f\u7a4d\u7f70\u6b3e\u7e3d\u984d\uff1a<strong style="color:#f85149;font-size:15px;">$' + totalPool + '</strong>';
   document.getElementById('summary-table').appendChild(footer);
 }
 
 function renderCaptainTable() {
-  const data = PLAYER_ORDER.map(name => {
-    const caps = allCapLog.filter(r => r.player_name === name);
-    const total = caps.length;
-    const ok = caps.filter(c => c.cap_ok === 1).length;
-    const totalPts = caps.reduce((s,c) => s + (c.captain_pts || 0), 0);
-    return { name, totalPts, ok, total, rate: total > 0 ? (ok/total*100).toFixed(0) : 0 };
-  }).sort((a,b) => b.totalPts - a.totalPts);
-  if (!data.some(d => d.total > 0)) { document.getElementById('captain-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
-  let html = '<table><tr><th>#</th><th>玩家</th><th class="col-important">Cap 總分</th><th>成功率</th></tr>';
-  data.forEach((p, i) => {
-    html += `<tr><td class="rank-num">${i+1}</td><td><strong>${p.name}</strong></td>
-      <td class="col-important"><strong>${p.totalPts}</strong></td>
-      <td>${p.rate}% (${p.ok}/${p.total})</td></tr>`;
+  var data = PLAYER_ORDER.map(function(name) {
+    var c = allCapLog.filter(function(r){ return r.player_name === name; });
+    var total = c.length;
+    var ok = c.filter(function(x){ return x.cap_ok === 1; }).length;
+    var totalPts = c.reduce(function(s,x){ return s + (x.captain_pts || 0); }, 0);
+    return { name: name, totalPts: totalPts, ok: ok, total: total, rate: total > 0 ? (ok/total*100).toFixed(0) : 0 };
+  }).sort(function(a,b){ return b.totalPts - a.totalPts; });
+  if (!data.some(function(d){ return d.total > 0; })) { document.getElementById('captain-table').innerHTML = '<div class="loading">\u672a\u6709\u6578\u64da</div>'; return; }
+  var html = '<table><tr><th>#</th><th>\u73a9\u5bb6</th><th class="col-important">Cap \u7e3d\u5206</th><th>\u6210\u529f\u7387</th></tr>';
+  data.forEach(function(p, i) {
+    html += '<tr><td class="rank-num">' + (i+1) + '</td><td><strong>' + p.name + '</strong></td>' +
+      '<td class="col-important"><strong>' + p.totalPts + '</strong></td>' +
+      '<td>' + p.rate + '% (' + p.ok + '/' + p.total + ')</td></tr>';
   });
   html += '</table>';
   document.getElementById('captain-table').innerHTML = html;
 }
 
 function renderLastPlaceTable() {
-  const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
-  const cnt = {};
-  PLAYER_ORDER.forEach(n => cnt[n] = 0);
-  gws.forEach(gw => {
-    const d = allResults.filter(r => r.gw === gw);
+  var gwSet = {}; allResults.forEach(function(r){ gwSet[r.gw]=1; });
+  var gws = Object.keys(gwSet).map(Number).sort(function(a,b){return a-b;});
+  var cnt = {};
+  PLAYER_ORDER.forEach(function(n){ cnt[n] = 0; });
+  gws.forEach(function(gw) {
+    var d = allResults.filter(function(r){ return r.gw === gw; });
     if (!d.length) return;
-    const min = Math.min(...d.map(r => r.gross_points));
-    d.filter(r => r.gross_points === min).forEach(r => { if (cnt[r.player_name] !== undefined) cnt[r.player_name]++; });
+    var min = Math.min.apply(null, d.map(function(r){ return r.gross_points; }));
+    d.filter(function(r){ return r.gross_points === min; }).forEach(function(r){ if (cnt[r.player_name] !== undefined) cnt[r.player_name]++; });
   });
-  const data = PLAYER_ORDER.map(n => ({ name: n, count: cnt[n] || 0 })).sort((a,b) => b.count - a.count);
-  let html = '<table><tr><th>#</th><th>玩家</th><th>包尾次數</th></tr>';
-  data.forEach((p, i) => {
-    html += `<tr><td class="rank-num">${i+1}</td><td><strong>${p.name}</strong></td><td>${p.count} 次</td></tr>`;
+  var data = PLAYER_ORDER.map(function(n){ return { name: n, count: cnt[n] || 0 }; }).sort(function(a,b){ return b.count - a.count; });
+  var html = '<table><tr><th>#</th><th>\u73a9\u5bb6</th><th>\u5305\u5c3e\u6b21\u6578</th></tr>';
+  data.forEach(function(p, i) {
+    html += '<tr><td class="rank-num">' + (i+1) + '</td><td><strong>' + p.name + '</strong></td><td>' + p.count + ' \u6b21</td></tr>';
   });
   html += '</table>';
   document.getElementById('lastplace-table').innerHTML = html;
 }
 
 function renderWorstGWTable() {
-  const gws = [...new Set(allResults.map(r => r.gw))].sort((a,b) => a-b);
-  const d = gws.map(gw => {
-    const gwData = allResults.filter(r => r.gw === gw);
-    return { gw, totalPenalty: gwData.reduce((s,r) => s + Math.abs(r.total_penalty), 0), playerCount: gwData.filter(r => r.total_penalty < 0).length };
-  }).sort((a,b) => b.totalPenalty - a.totalPenalty);
-  if (!d.length) { document.getElementById('worstgw-table').innerHTML = '<div class="loading">未有數據</div>'; return; }
-  let html = '<table><tr><th>#</th><th>GW</th><th>總罰款</th><th>受罰人數</th></tr>';
-  d.slice(0, 10).forEach((g, i) => {
-    html += `<tr ${i === 0 ? 'style="background:var(--worst-row-bg)"' : ''}>
-      <td class="rank-num">${i+1}${i === 0 ? ' 💀' : ''}</td>
-      <td><strong>GW${g.gw}</strong></td><td>$${g.totalPenalty}</td><td>${g.playerCount} 人</td></tr>`;
+  var gwSet = {}; allResults.forEach(function(r){ gwSet[r.gw]=1; });
+  var gws = Object.keys(gwSet).map(Number).sort(function(a,b){return a-b;});
+  var d = gws.map(function(gw) {
+    var gwData = allResults.filter(function(r){ return r.gw === gw; });
+    return { gw: gw, totalPenalty: gwData.reduce(function(s,r){ return s + Math.abs(r.total_penalty); }, 0), playerCount: gwData.filter(function(r){ return r.total_penalty < 0; }).length };
+  }).sort(function(a,b){ return b.totalPenalty - a.totalPenalty; });
+  if (!d.length) { document.getElementById('worstgw-table').innerHTML = '<div class="loading">\u672a\u6709\u6578\u64da</div>'; return; }
+  var html = '<table><tr><th>#</th><th>GW</th><th>\u7e3d\u7f70\u6b3e</th><th>\u53d7\u7f70\u4eba\u6578</th></tr>';
+  d.slice(0, 10).forEach(function(g, i) {
+    /* ★ 移除「-」號 */
+    html += '<tr ' + (i === 0 ? 'style="background:#2d1515"' : '') + '>' +
+      '<td class="rank-num">' + (i+1) + (i === 0 ? ' \ud83d\udc80' : '') + '</td>' +
+      '<td><strong>GW' + g.gw + '</strong></td><td>$' + g.totalPenalty + '</td><td>' + g.playerCount + ' \u4eba</td></tr>';
   });
   html += '</table>';
   document.getElementById('worstgw-table').innerHTML = html;
 }
 
 function switchView(view) {
-  ['weekly','summary'].forEach(v => { document.getElementById(`view-${v}`).style.display = v === view ? 'block' : 'none'; });
-  document.querySelectorAll('.nav-tab').forEach((tab, i) => { tab.classList.toggle('active', ['weekly','summary'][i] === view); });
+  ['weekly','summary'].forEach(function(v){ document.getElementById('view-' + v).style.display = v === view ? 'block' : 'none'; });
+  document.querySelectorAll('.nav-tab').forEach(function(tab, i){ tab.classList.toggle('active', ['weekly','summary'][i] === view); });
 }
 
 function onGWSelect() {
-  const gw = parseInt(document.getElementById('gw-select').value);
+  var gw = parseInt(document.getElementById('gw-select').value);
   if (gw) renderWeekly(gw);
 }
 
 function toggleAdmin() {
-  const p = document.getElementById('admin-panel');
+  var p = document.getElementById('admin-panel');
   p.style.display = p.style.display === 'block' ? 'none' : 'block';
 }
 
 function checkPwd() {
-  if (document.getElementById('admin-password').value !== ADMIN_PASSWORD) { setStatus('❌ 密碼錯誤', 'err'); return false; }
+  if (document.getElementById('admin-password').value !== ADMIN_PASSWORD) { setStatus('\u274c \u5bc6\u78bc\u932f\u8aa4', 'err'); return false; }
   return true;
 }
 
 function setAllDisabled(v) {
-  ['update-btn','latest-btn','batch-btn'].forEach(id => document.getElementById(id).disabled = v);
+  ['update-btn','latest-btn','batch-btn'].forEach(function(id){ document.getElementById(id).disabled = v; });
 }
 
 async function updateGW() {
   if (!checkPwd()) return;
-  const gw = parseInt(document.getElementById('gw-input').value);
-  if (!gw || gw < 1 || gw > 38) { setStatus('❌ 請輸入有效 GW', 'err'); return; }
-  setAllDisabled(true); setStatus(`⏳ 更新 GW${gw}...`, '');
-  try { await runUpdate(gw); setStatus(`✅ GW${gw} 完成！`, 'ok'); }
-  catch(e) { setStatus('❌ ' + e.message, 'err'); }
+  var gw = parseInt(document.getElementById('gw-input').value);
+  if (!gw || gw < 1 || gw > 38) { setStatus('\u274c \u8acb\u8f38\u5165\u6709\u6548 GW', 'err'); return; }
+  setAllDisabled(true); setStatus('\u23f3 \u66f4\u65b0 GW' + gw + '...', '');
+  try { await runUpdate(gw); setStatus('\u2705 GW' + gw + ' \u5b8c\u6210\uff01', 'ok'); }
+  catch(e) { setStatus('\u274c ' + e.message, 'err'); }
   setAllDisabled(false);
 }
 
 async function updateLatest() {
   if (!checkPwd()) return;
-  setAllDisabled(true); setStatus('🔄 拎緊當前 GW...', '');
+  setAllDisabled(true); setStatus('\ud83d\udd04 \u62ce\u7dca\u7576\u524d GW...', '');
   try {
-    const boot = await fetchFPL('bootstrap-static/');
-    let gw = 0;
-    boot.events.forEach(e => { if (e.is_current) gw = e.id; });
-    if (!gw) boot.events.forEach(e => { if (e.finished && e.id > gw) gw = e.id; });
-    if (!gw) { setStatus('❌ 搵唔到當前 GW', 'err'); setAllDisabled(false); return; }
-    await runUpdate(gw); setStatus(`✅ GW${gw} 完成！`, 'ok');
-  } catch(e) { setStatus('❌ ' + e.message, 'err'); }
+    var boot = await fetchFPL('bootstrap-static/');
+    var gw = 0;
+    boot.events.forEach(function(e){ if (e.is_current) gw = e.id; });
+    if (!gw) boot.events.forEach(function(e){ if (e.finished && e.id > gw) gw = e.id; });
+    if (!gw) { setStatus('\u274c \u641e\u5514\u5230\u7576\u524d GW', 'err'); setAllDisabled(false); return; }
+    await runUpdate(gw); setStatus('\u2705 GW' + gw + ' \u5b8c\u6210\uff01', 'ok');
+  } catch(e) { setStatus('\u274c ' + e.message, 'err'); }
   setAllDisabled(false);
 }
 
 async function batchUpdate() {
   if (!checkPwd()) return;
-  const from = parseInt(document.getElementById('batch-from').value);
-  const to = parseInt(document.getElementById('batch-to').value);
-  if (!from || !to || from > to) { setStatus('❌ GW 範圍無效', 'err'); return; }
-  if (to - from >= 8) { setStatus('❌ 每次最多 8 個 GW', 'err'); return; }
+  var from = parseInt(document.getElementById('batch-from').value);
+  var to = parseInt(document.getElementById('batch-to').value);
+  if (!from || !to || from > to) { setStatus('\u274c GW \u7bc4\u570d\u7121\u6548', 'err'); return; }
+  if (to - from >= 8) { setStatus('\u274c \u6bcf\u6b21\u6700\u591a 8 \u500b GW', 'err'); return; }
   setAllDisabled(true);
-  for (let gw = from; gw <= to; gw++) {
-    setStatus(`⏳ GW${gw}...（${gw-from+1}/${to-from+1}）`, '');
-    try { await runUpdate(gw); } catch(e) { setStatus(`❌ GW${gw} 出錯：${e.message}`, 'err'); }
-    await new Promise(r => setTimeout(r, 1000));
+  for (var gw = from; gw <= to; gw++) {
+    setStatus('\u23f3 GW' + gw + '...\uff08' + (gw-from+1) + '/' + (to-from+1) + '\uff09', '');
+    try { await runUpdate(gw); } catch(e) { setStatus('\u274c GW' + gw + ' \u51fa\u932f\uff1a' + e.message, 'err'); }
+    await new Promise(function(r){ setTimeout(r, 1000); });
   }
-  setStatus(`✅ GW${from}–${to} 完成！`, 'ok');
+  setStatus('\u2705 GW' + from + '\u2013' + to + ' \u5b8c\u6210\uff01', 'ok');
   setAllDisabled(false);
 }
 
 function resolveEffectiveCaptain(capEl, vcEl, liveData, rawChip, teamMatchStatus, elementTeam) {
-  const isTC = CHIP_TC_KEYS.includes(rawChip);
+  var isTC = CHIP_TC_KEYS.includes(rawChip);
   if (isTC) return { el: capEl, multiplier: 3, usedVC: false };
-  const capMins = (liveData[capEl] && liveData[capEl].minutes) || 0;
-  const capTeam = elementTeam[capEl];
-  const capStatus = capTeam ? (teamMatchStatus[capTeam] || { noFixture: true }) : { noFixture: true };
+  var capMins = (liveData[capEl] && liveData[capEl].minutes) || 0;
+  var capTeam = elementTeam[capEl];
+  var capStatus = capTeam ? (teamMatchStatus[capTeam] || { noFixture: true }) : { noFixture: true };
   if (capMins === 0 && (capStatus.noFixture || capStatus.kickedOff) && vcEl) return { el: vcEl, multiplier: 2, usedVC: true };
   return { el: capEl, multiplier: 2, usedVC: false };
 }
 
 async function runUpdate(gw) {
-  const [h2hRes, bootRes, liveRes, fixtureRes] = await Promise.all([
-    fetchFPL(`leagues-h2h-matches/league/${LEAGUE_ID}/?event=${gw}`),
-    fetchFPL('bootstrap-static/'), fetchFPL(`event/${gw}/live/`), fetchFPL(`fixtures/?event=${gw}`)
+  var results = await Promise.all([
+    fetchFPL('leagues-h2h-matches/league/' + LEAGUE_ID + '/?event=' + gw),
+    fetchFPL('bootstrap-static/'), fetchFPL('event/' + gw + '/live/'), fetchFPL('fixtures/?event=' + gw)
   ]);
-  const netByEntry = {};
-  (h2hRes.results || []).forEach(m => { netByEntry[m.entry_1_entry] = m.entry_1_points; netByEntry[m.entry_2_entry] = m.entry_2_points; });
-  const elementName = {}, elementTeam = {};
-  (bootRes.elements || []).forEach(el => { elementName[el.id] = el.web_name; elementTeam[el.id] = el.team; });
-  const liveData = {};
-  (liveRes.elements || []).forEach(e => { liveData[e.id] = { points: (e.stats && e.stats.total_points) || 0, minutes: (e.stats && e.stats.minutes) || 0 }; });
-  const now = new Date();
-  const teamMatchStatus = {};
-  (fixtureRes || []).forEach(f => {
+  var h2hRes = results[0], bootRes = results[1], liveRes = results[2], fixtureRes = results[3];
+  var netByEntry = {};
+  (h2hRes.results || []).forEach(function(m){ netByEntry[m.entry_1_entry] = m.entry_1_points; netByEntry[m.entry_2_entry] = m.entry_2_points; });
+  var elementName = {}, elementTeam = {};
+  (bootRes.elements || []).forEach(function(el){ elementName[el.id] = el.web_name; elementTeam[el.id] = el.team; });
+  var liveData = {};
+  (liveRes.elements || []).forEach(function(e){ liveData[e.id] = { points: (e.stats && e.stats.total_points) || 0, minutes: (e.stats && e.stats.minutes) || 0 }; });
+  var now = new Date();
+  var teamMatchStatus = {};
+  (fixtureRes || []).forEach(function(f) {
     if (!f.kickoff_time) return;
-    const mins = (now - new Date(f.kickoff_time)) / 60000;
-    const s = { kickedOff: mins >= 20, finished: f.finished || false, noFixture: false };
+    var mins = (now - new Date(f.kickoff_time)) / 60000;
+    var s = { kickedOff: mins >= 20, finished: f.finished || false, noFixture: false };
     teamMatchStatus[f.team_h] = s; teamMatchStatus[f.team_a] = s;
   });
-  const picksData = await Promise.all(Object.keys(PLAYER_MAP).map(async name => {
-    try { return { name, entryId: PLAYER_MAP[name], data: await fetchFPL(`entry/${PLAYER_MAP[name]}/event/${gw}/picks/`) }; }
-    catch(e) { return { name, entryId: PLAYER_MAP[name], data: null }; }
+  var picksData = await Promise.all(Object.keys(PLAYER_MAP).map(async function(name) {
+    try { return { name: name, entryId: PLAYER_MAP[name], data: await fetchFPL('entry/' + PLAYER_MAP[name] + '/event/' + gw + '/picks/') }; }
+    catch(e) { return { name: name, entryId: PLAYER_MAP[name], data: null }; }
   }));
-  const grossByEntry = {}, capElByEntry = {}, vcElByEntry = {}, rawChipByEntry = {};
-  picksData.forEach(({ entryId, data }) => {
+  var grossByEntry = {}, capElByEntry = {}, vcElByEntry = {}, rawChipByEntry = {};
+  picksData.forEach(function(item) {
+    var entryId = item.entryId, data = item.data;
     if (!data || !data.entry_history) return;
-    const net = netByEntry[entryId];
+    var net = netByEntry[entryId];
     if (typeof net === 'number') grossByEntry[entryId] = net + (data.entry_history.event_transfers_cost || 0);
-    const cap = (data.picks || []).find(p => p.is_captain);
-    const vc = (data.picks || []).find(p => p.is_vice_captain);
+    var cap = (data.picks || []).find(function(p){ return p.is_captain; });
+    var vc = (data.picks || []).find(function(p){ return p.is_vice_captain; });
     if (cap) capElByEntry[entryId] = cap.element;
     if (vc) vcElByEntry[entryId] = vc.element;
     rawChipByEntry[entryId] = data.active_chip || '';
   });
-  const grossArr = Object.values(grossByEntry).filter(v => typeof v === 'number');
-  const minGross = grossArr.length ? Math.min(...grossArr) : -1;
-  const prevResults = await supabaseGet('weekly_results', `?gw=eq.${gw - 1}`);
-  const prevByEntry = {};
-  if (Array.isArray(prevResults)) prevResults.forEach(r => { prevByEntry[Number(r.entry_id)] = r; });
-  const weeklyRows = [], capRows = [];
-  for (const { name, entryId } of picksData) {
-    const gross = grossByEntry[entryId], net = netByEntry[entryId];
-    if (typeof gross !== 'number' || typeof net !== 'number') continue;
-    const lp = (gross < 45 ? -20 : 0) + (gross === minGross ? -20 : 0);
-    const h2hp = calcH2H(h2hRes.results || [], entryId);
-    const prev = prevByEntry[Number(entryId)];
+  var grossArr = Object.values(grossByEntry).filter(function(v){ return typeof v === 'number'; });
+  var minGross = grossArr.length ? Math.min.apply(null, grossArr) : -1;
+  var prevResults = await supabaseGet('weekly_results', '?gw=eq.' + (gw - 1));
+  var prevByEntry = {};
+  if (Array.isArray(prevResults)) prevResults.forEach(function(r){ prevByEntry[Number(r.entry_id)] = r; });
+  var weeklyRows = [], capRows = [];
+  picksData.forEach(function(item) {
+    var name = item.name, entryId = item.entryId;
+    var gross = grossByEntry[entryId], net = netByEntry[entryId];
+    if (typeof gross !== 'number' || typeof net !== 'number') return;
+    var lp = (gross < 45 ? -20 : 0) + (gross === minGross ? -20 : 0);
+    var h2hp = calcH2H(h2hRes.results || [], entryId);
+    var prev = prevByEntry[Number(entryId)];
     weeklyRows.push({
-      gw, player_name: name, entry_id: entryId, gross_points: gross, net_points: net,
+      gw: gw, player_name: name, entry_id: entryId, gross_points: gross, net_points: net,
       league_penalty: lp, h2h_penalty: h2hp, total_penalty: lp + h2hp,
       cumul_penalty: (prev ? prev.cumul_penalty : 0) + lp + h2hp,
       cumul_net_points: (prev ? prev.cumul_net_points : 0) + net,
       updated_at: new Date().toISOString()
     });
-    const capEl = capElByEntry[entryId], vcEl = vcElByEntry[entryId];
-    const rawChip = rawChipByEntry[entryId] || '';
+    var capEl = capElByEntry[entryId], vcEl = vcElByEntry[entryId];
+    var rawChip = rawChipByEntry[entryId] || '';
     if (capEl) {
-      const eff = resolveEffectiveCaptain(capEl, vcEl, liveData, rawChip, teamMatchStatus, elementTeam);
-      const rawPts = (liveData[eff.el] && liveData[eff.el].points) || 0;
+      var eff = resolveEffectiveCaptain(capEl, vcEl, liveData, rawChip, teamMatchStatus, elementTeam);
+      var rawPts = (liveData[eff.el] && liveData[eff.el].points) || 0;
       capRows.push({
-        gw, player_name: name, entry_id: entryId,
+        gw: gw, player_name: name, entry_id: entryId,
         captain: (elementName[eff.el] || eff.el) + (eff.usedVC ? ' (VC)' : ''),
         captain_pts: rawPts * eff.multiplier,
         cap_ok: rawPts >= 4 ? 1 : 0,
         chip: rawChip, updated_at: new Date().toISOString()
       });
     }
-  }
+  });
   await supabaseUpsert('weekly_results', weeklyRows);
   await supabaseUpsert('cap_log', capRows);
   await loadData();
 }
 
 function calcH2H(matches, entryId) {
-  for (const m of matches) {
+  for (var i = 0; i < matches.length; i++) {
+    var m = matches[i];
     if (m.entry_1_entry === entryId) return m.entry_1_points < m.entry_2_points ? -20 : 0;
     if (m.entry_2_entry === entryId) return m.entry_2_points < m.entry_1_points ? -20 : 0;
   }
@@ -962,23 +891,9 @@ function calcH2H(matches, entryId) {
 }
 
 function setStatus(msg, type) {
-  const el = document.getElementById('admin-status');
+  var el = document.getElementById('admin-status');
   el.textContent = msg; el.className = 'status-msg ' + type;
 }
-
-
-function toggleTheme() {
-  const body = document.body;
-  const isLight = body.classList.toggle('light');
-  document.getElementById('theme-toggle').textContent = isLight ? '☀️' : '🌙';
-  localStorage.setItem('fpl-theme', isLight ? 'light' : 'dark');
-}
-(function() {
-  if (localStorage.getItem('fpl-theme') === 'light') {
-    document.body.classList.add('light');
-    document.getElementById('theme-toggle').textContent = '☀️';
-  }
-})();
 
 loadData();
 </script>
