@@ -167,15 +167,12 @@
   .h2h-side-name { font-size: 13px; font-weight: 600; }
   .h2h-side-team { font-size: 10px; color: var(--text-secondary); }
   .h2h-scores { display: flex; margin: 0 12px; flex-shrink: 0; }
-  .h2h-score-box { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #fff; }
+  .h2h-score-box { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #fff; background: #2d333b; }
   .h2h-score-box:first-child { border-radius: 4px 0 0 4px; }
   .h2h-score-box:last-child { border-radius: 0 4px 4px 0; }
-  .h2h-score-box.win { background: #2d333b; border-left: 3px solid var(--accent-green); }
-  .h2h-score-box.lose { background: #2d333b; }
-  .h2h-score-box.draw { background: #2d333b; }
-  body.light .h2h-score-box.win { background: #d8dee4; border-left: 3px solid var(--accent-green); }
-  body.light .h2h-score-box.lose { background: #d8dee4; }
-  body.light .h2h-score-box.draw { background: #d8dee4; }
+  .h2h-score-box.win-left { border-left: 3px solid var(--accent-green); }
+  .h2h-score-box.win-right { border-right: 3px solid var(--accent-green); }
+  body.light .h2h-score-box { background: #c8cdd3; color: #1f2328; }
   @media (max-width: 700px) {
     .h2h-row { padding: 8px 10px; }
     .h2h-side-name { font-size: 11px; }
@@ -403,7 +400,6 @@ async function loadData() {
   renderCaptainTable();
   renderLastPlaceTable();
   renderWorstGWTable();
-  renderH2HStandings();
   startAutoRefresh();
   preloadSquads(currentGW || latestGW);
 }
@@ -770,6 +766,7 @@ function renderWeekly(gw) {
   footer.innerHTML = `💰 截至 GW${gw} 全體累積罰款：<strong style="color:var(--accent-red);font-size:15px;">$${totalPool}</strong>`;
   wrapper.appendChild(footer);
   renderH2HMatches(gw);
+  renderH2HStandings(gw);
 }
 
 function renderSummaryTable() {
@@ -868,9 +865,9 @@ async function renderH2HMatches(gw) {
       const team2 = ENTRY_TO_NAME[m.entry_2_entry] || m.entry_2_name || '';
       const pts1 = m.entry_1_points;
       const pts2 = m.entry_2_points;
-      let cls1 = 'draw', cls2 = 'draw';
-      if (pts1 > pts2) { cls1 = 'win'; cls2 = 'lose'; }
-      else if (pts2 > pts1) { cls1 = 'lose'; cls2 = 'win'; }
+      let cls1 = '', cls2 = '';
+      if (pts1 > pts2) { cls1 = 'win-left'; }
+      else if (pts2 > pts1) { cls2 = 'win-right'; }
       html += `<div class="h2h-row">
         <div class="h2h-side left">
           <div class="h2h-side-name">${team1}</div>
@@ -893,23 +890,41 @@ async function renderH2HMatches(gw) {
   }
 }
 
-async function renderH2HStandings() {
+const h2hCache = {};
+
+async function renderH2HStandings(gw) {
   const container = document.getElementById('h2h-standings');
   container.innerHTML = '<div class="loading">載入中...</div>';
   try {
-    const res = await fetchFPL(`leagues-h2h/${LEAGUE_ID}/standings/`);
-    const standings = (res.standings && res.standings.results) || (res.results) || [];
-    if (!standings.length) { container.innerHTML = '<div class="loading">未有數據</div>'; return; }
+    const stats = {};
+    PLAYER_ORDER.forEach(name => {
+      const eid = PLAYER_MAP[name];
+      stats[eid] = { name, w: 0, d: 0, l: 0, pts: 0 };
+    });
+    const gws = [...new Set(allResults.map(r => r.gw))].filter(g => g <= gw).sort((a,b) => a - b);
+    for (const g of gws) {
+      if (!h2hCache[g]) {
+        try { h2hCache[g] = await fetchFPL(`leagues-h2h-matches/league/${LEAGUE_ID}/?event=${g}`); } catch(e) { continue; }
+      }
+      (h2hCache[g].results || []).forEach(m => {
+        const e1 = m.entry_1_entry, e2 = m.entry_2_entry;
+        const p1 = m.entry_1_points, p2 = m.entry_2_points;
+        if (!stats[e1] || !stats[e2]) return;
+        if (p1 > p2) { stats[e1].w++; stats[e1].pts += 3; stats[e2].l++; }
+        else if (p2 > p1) { stats[e2].w++; stats[e2].pts += 3; stats[e1].l++; }
+        else { stats[e1].d++; stats[e1].pts += 1; stats[e2].d++; stats[e2].pts += 1; }
+      });
+    }
+    const sorted = Object.values(stats).sort((a,b) => b.pts - a.pts);
     let html = '<table><tr><th>#</th><th>玩家</th><th>勝</th><th>和</th><th>負</th><th class="col-important">積分</th></tr>';
-    standings.forEach((s, i) => {
-      const name = ENTRY_TO_NAME[s.entry] || ENTRY_TO_NAME[s.entry_id] || s.entry_name || s.player_name || '?';
+    sorted.forEach((s, i) => {
       html += `<tr>
-        <td class="rank-num">${s.rank || i + 1}</td>
-        <td><strong>${name}</strong></td>
-        <td style="color:var(--accent-green)">${s.matches_won}</td>
-        <td>${s.matches_drawn}</td>
-        <td style="color:var(--accent-red)">${s.matches_lost}</td>
-        <td class="col-important">${s.total}</td>
+        <td class="rank-num">${i + 1}</td>
+        <td><strong>${s.name}</strong></td>
+        <td style="color:var(--accent-green)">${s.w}</td>
+        <td>${s.d}</td>
+        <td style="color:var(--accent-red)">${s.l}</td>
+        <td class="col-important">${s.pts}</td>
       </tr>`;
     });
     html += '</table>';
