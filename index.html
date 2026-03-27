@@ -54,7 +54,11 @@
     --worst-row-bg: #ffebe9;
     --modal-overlay: rgba(0,0,0,0.5);
   }
-  .theme-toggle { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-secondary); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 16px; line-height: 1; }
+  .theme-toggle { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-secondary); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; line-height: 1; }
+  body.light .player-card.is-captain { border-color: #d4a000; box-shadow: 0 0 10px rgba(180,140,0,0.5), inset 0 0 10px rgba(180,140,0,0.15); }
+  body.light .player-card.is-vc-active { border-color: #8a8a8a; box-shadow: 0 0 10px rgba(100,100,100,0.45), inset 0 0 10px rgba(100,100,100,0.15); }
+  body.light .player-card-badge { background: #d4a000; }
+  body.light .player-card-badge.vc-badge-card { background: #8a8a8a; color: #fff; }
 
   body { background: var(--bg-body); color: var(--text-primary); font-family: -apple-system, sans-serif; }
   .header { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
@@ -114,8 +118,8 @@
   .squad-section-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
   .squad-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
   .player-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; width: 90px; text-align: center; overflow: hidden; flex-shrink: 0; position: relative; }
-  .player-card.is-captain { border-color: #ffd700; box-shadow: 0 0 6px rgba(255,215,0,0.3); }
-  .player-card.is-vc-active { border-color: #c0c0c0; box-shadow: 0 0 6px rgba(192,192,192,0.3); }
+  .player-card.is-captain { border: 2px solid #ffd700; box-shadow: 0 0 8px rgba(255,215,0,0.5), inset 0 0 8px rgba(255,215,0,0.15); }
+  .player-card.is-vc-active { border: 2px solid #c0c0c0; box-shadow: 0 0 8px rgba(192,192,192,0.5), inset 0 0 8px rgba(192,192,192,0.15); }
   .player-card.is-bench { opacity: 0.55; }
   .player-card-shirt { padding: 6px 0 2px; background: var(--bg-header); height: 68px; display: flex; align-items: center; justify-content: center; }
   .player-card-shirt img { height: 56px; width: auto; object-fit: contain; }
@@ -184,7 +188,7 @@
   <div class="header-right">
     <span class="auto-refresh-indicator" id="refresh-indicator"></span>
     <span class="last-updated" id="last-updated">載入中...</span>
-    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
     <button class="admin-toggle" onclick="toggleAdmin()">🔧 更新</button>
   </div>
 </div>
@@ -968,13 +972,13 @@ function setStatus(msg, type) {
 function toggleTheme() {
   const body = document.body;
   const isLight = body.classList.toggle('light');
-  document.getElementById('theme-toggle').textContent = isLight ? '☀️' : '🌙';
+  document.getElementById('theme-toggle').textContent = isLight ? '☀️ Light' : '🌙 Dark';
   localStorage.setItem('fpl-theme', isLight ? 'light' : 'dark');
 }
 (function() {
   if (localStorage.getItem('fpl-theme') === 'light') {
     document.body.classList.add('light');
-    document.getElementById('theme-toggle').textContent = '☀️';
+    document.getElementById('theme-toggle').textContent = '☀️ Light';
   }
 })();
 
