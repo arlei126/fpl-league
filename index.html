@@ -157,6 +157,23 @@
   .modal-tab.active { background: var(--tab-active); color: #fff; border-color: var(--tab-active); }
   .modal-chart-container { padding: 20px; }
 
+  /* ===== H2H 對賽卡片 ===== */
+  .h2h-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; padding: 16px; }
+  .h2h-card { display: flex; align-items: center; background: var(--bg-body); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .h2h-player { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .h2h-player-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .h2h-player-score { font-size: 20px; font-weight: 700; }
+  .h2h-player.win .h2h-player-score { color: var(--accent-green); }
+  .h2h-player.lose .h2h-player-score { color: var(--accent-red); }
+  .h2h-player.draw .h2h-player-score { color: var(--text-secondary); }
+  .h2h-vs { font-size: 11px; color: var(--text-secondary); font-weight: 700; padding: 0 4px; flex-shrink: 0; }
+  @media (max-width: 700px) {
+    .h2h-grid { grid-template-columns: 1fr; gap: 8px; padding: 8px; }
+    .h2h-player-name { font-size: 11px; }
+    .h2h-player-score { font-size: 18px; }
+    .h2h-player { padding: 8px 10px; }
+  }
+
   .squad-mobile { display: none; }
 
   /* ===== 手機版陣容卡片（已修復 iOS display:contents bug）===== */
@@ -251,6 +268,16 @@
       </div>
       <div class="overflow-x">
         <div id="weekly-table"><div class="loading">載入中...</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">⚔️ H2H 對賽</div>
+      <div id="h2h-matches"><div class="loading">載入中...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 H2H 積分榜</div>
+      <div class="overflow-x">
+        <div id="h2h-standings"><div class="loading">載入中...</div></div>
       </div>
     </div>
   </div>
@@ -364,6 +391,7 @@ async function loadData() {
   renderCaptainTable();
   renderLastPlaceTable();
   renderWorstGWTable();
+  renderH2HStandings();
   startAutoRefresh();
   preloadSquads(currentGW || latestGW);
 }
@@ -729,6 +757,7 @@ function renderWeekly(gw) {
   footer.className = 'pool-footer';
   footer.innerHTML = `💰 截至 GW${gw} 全體累積罰款：<strong style="color:var(--accent-red);font-size:15px;">$${totalPool}</strong>`;
   wrapper.appendChild(footer);
+  renderH2HMatches(gw);
 }
 
 function renderSummaryTable() {
@@ -807,6 +836,70 @@ function renderWorstGWTable() {
   });
   html += '</table>';
   document.getElementById('worstgw-table').innerHTML = html;
+}
+
+const ENTRY_TO_NAME = {};
+Object.entries(PLAYER_MAP).forEach(([name, id]) => { ENTRY_TO_NAME[id] = name; });
+
+async function renderH2HMatches(gw) {
+  const container = document.getElementById('h2h-matches');
+  container.innerHTML = '<div class="loading">載入中...</div>';
+  try {
+    const h2hRes = await fetchFPL(`leagues-h2h-matches/league/${LEAGUE_ID}/?event=${gw}`);
+    const matches = h2hRes.results || [];
+    if (!matches.length) { container.innerHTML = '<div class="loading">未有數據</div>'; return; }
+    let html = '<div class="h2h-grid">';
+    matches.forEach(m => {
+      const name1 = ENTRY_TO_NAME[m.entry_1_entry] || m.entry_1_name || '?';
+      const name2 = ENTRY_TO_NAME[m.entry_2_entry] || m.entry_2_name || '?';
+      const pts1 = m.entry_1_points;
+      const pts2 = m.entry_2_points;
+      let cls1 = 'draw', cls2 = 'draw';
+      if (pts1 > pts2) { cls1 = 'win'; cls2 = 'lose'; }
+      else if (pts2 > pts1) { cls1 = 'lose'; cls2 = 'win'; }
+      html += `<div class="h2h-card">
+        <div class="h2h-player ${cls1}">
+          <div class="h2h-player-name">${name1}</div>
+          <div class="h2h-player-score">${pts1}</div>
+        </div>
+        <div class="h2h-vs">VS</div>
+        <div class="h2h-player ${cls2}">
+          <div class="h2h-player-name">${name2}</div>
+          <div class="h2h-player-score">${pts2}</div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  } catch(e) {
+    container.innerHTML = '<div class="loading">載入失敗</div>';
+  }
+}
+
+async function renderH2HStandings() {
+  const container = document.getElementById('h2h-standings');
+  container.innerHTML = '<div class="loading">載入中...</div>';
+  try {
+    const res = await fetchFPL(`leagues-h2h-standings/league/${LEAGUE_ID}/`);
+    const standings = (res.standings && res.standings.results) || [];
+    if (!standings.length) { container.innerHTML = '<div class="loading">未有數據</div>'; return; }
+    let html = '<table><tr><th>#</th><th>玩家</th><th>勝</th><th>和</th><th>負</th><th class="col-important">積分</th></tr>';
+    standings.forEach((s, i) => {
+      const name = ENTRY_TO_NAME[s.entry] || s.entry_name || '?';
+      html += `<tr>
+        <td class="rank-num">${s.rank || i + 1}</td>
+        <td><strong>${name}</strong></td>
+        <td style="color:var(--accent-green)">${s.matches_won}</td>
+        <td>${s.matches_drawn}</td>
+        <td style="color:var(--accent-red)">${s.matches_lost}</td>
+        <td class="col-important">${s.total}</td>
+      </tr>`;
+    });
+    html += '</table>';
+    container.innerHTML = html;
+  } catch(e) {
+    container.innerHTML = '<div class="loading">載入失敗</div>';
+  }
 }
 
 function switchView(view) {
