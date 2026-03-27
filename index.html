@@ -170,9 +170,12 @@
   .h2h-score-box { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #fff; }
   .h2h-score-box:first-child { border-radius: 4px 0 0 4px; }
   .h2h-score-box:last-child { border-radius: 0 4px 4px 0; }
-  .h2h-score-box.win { background: var(--accent-blue); }
-  .h2h-score-box.lose { background: #6e7681; }
-  .h2h-score-box.draw { background: #6e7681; }
+  .h2h-score-box.win { background: #2d333b; border-left: 3px solid var(--accent-green); }
+  .h2h-score-box.lose { background: #2d333b; }
+  .h2h-score-box.draw { background: #2d333b; }
+  body.light .h2h-score-box.win { background: #d8dee4; border-left: 3px solid var(--accent-green); }
+  body.light .h2h-score-box.lose { background: #d8dee4; }
+  body.light .h2h-score-box.draw { background: #d8dee4; }
   @media (max-width: 700px) {
     .h2h-row { padding: 8px 10px; }
     .h2h-side-name { font-size: 11px; }
