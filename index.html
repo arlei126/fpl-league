@@ -170,9 +170,9 @@
   .h2h-score-box { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #fff; }
   .h2h-score-box:first-child { border-radius: 4px 0 0 4px; }
   .h2h-score-box:last-child { border-radius: 0 4px 4px 0; }
-  .h2h-score-box.win { background: var(--accent-green); }
-  .h2h-score-box.lose { background: var(--accent-red); }
-  .h2h-score-box.draw { background: var(--text-secondary); }
+  .h2h-score-box.win { background: var(--accent-blue); }
+  .h2h-score-box.lose { background: #6e7681; }
+  .h2h-score-box.draw { background: #6e7681; }
   @media (max-width: 700px) {
     .h2h-row { padding: 8px 10px; }
     .h2h-side-name { font-size: 11px; }
@@ -870,16 +870,16 @@ async function renderH2HMatches(gw) {
       else if (pts2 > pts1) { cls1 = 'lose'; cls2 = 'win'; }
       html += `<div class="h2h-row">
         <div class="h2h-side left">
-          <div class="h2h-side-name">${name1}</div>
-          <div class="h2h-side-team">${team1}</div>
+          <div class="h2h-side-name">${team1}</div>
+          <div class="h2h-side-team">${name1}</div>
         </div>
         <div class="h2h-scores">
           <div class="h2h-score-box ${cls1}">${pts1}</div>
           <div class="h2h-score-box ${cls2}">${pts2}</div>
         </div>
         <div class="h2h-side right">
-          <div class="h2h-side-name">${name2}</div>
-          <div class="h2h-side-team">${team2}</div>
+          <div class="h2h-side-name">${team2}</div>
+          <div class="h2h-side-team">${name2}</div>
         </div>
       </div>`;
     });
