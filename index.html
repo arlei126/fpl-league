@@ -143,7 +143,6 @@
   .admin-section-label { color: var(--text-secondary); font-size: 12px; margin-bottom: 6px; }
   .divider { border-top: 1px solid var(--border); margin: 14px 0; }
   .loading { padding: 40px; text-align: center; color: var(--text-secondary); }
-  .auto-refresh-indicator { font-size: 11px; color: var(--accent-green); }
   .pool-footer { padding: 12px 16px; background: var(--bg-header); border-top: 2px solid var(--border); font-size: 13px; color: var(--text-secondary); }
   .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--modal-overlay); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
   .modal-overlay.active { display: flex; }
@@ -210,7 +209,6 @@
 <div class="header">
   <h1>⚽️ 完季食大餐 🍽️🍻</h1>
   <div class="header-right">
-    <span class="auto-refresh-indicator" id="refresh-indicator"></span>
     <span class="last-updated" id="last-updated">載入中...</span>
     <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
     <button class="admin-toggle" onclick="toggleAdmin()">🔧 更新</button>
@@ -333,7 +331,6 @@ const CHIP_DISPLAY = {
 
 let allResults = [], allCapLog = [], allH2H = [], latestGW = null;
 let currentGW = null;
-let autoRefreshTimer = null, refreshCountdown = 300;
 let modalChart = null, currentModalPlayer = null, currentModalTab = 'penalty';
 let elementData = {};
 let currentSort = { key: 'cumul_net_points', dir: 'desc' };
@@ -402,7 +399,6 @@ async function loadData() {
   renderCaptainTable();
   renderLastPlaceTable();
   renderWorstGWTable();
-  startAutoRefresh();
   preloadSquads(currentGW || latestGW);
 }
 
@@ -537,21 +533,6 @@ async function toggleSquad(entryId, gw, usedVC) {
       squadRow.querySelector('.squad-container').innerHTML = `<div class="squad-loading">❌ 載入失敗</div>`;
     }
   }
-}
-
-function startAutoRefresh() {
-  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-  refreshCountdown = 300;
-  autoRefreshTimer = setInterval(async () => {
-    refreshCountdown--;
-    if (refreshCountdown <= 0) {
-      document.getElementById('refresh-indicator').textContent = '🔄';
-      await loadData();
-      refreshCountdown = 300;
-    } else {
-      document.getElementById('refresh-indicator').textContent = `⏱ ${refreshCountdown}s`;
-    }
-  }, 1000);
 }
 
 function showPlayerChart(playerName) {
@@ -1110,6 +1091,34 @@ function toggleTheme() {
 })();
 
 loadData();
+
+const AUTO_UPDATE_INTERVAL = 10 * 60 * 1000;
+let autoUpdateTimer = null;
+
+async function autoUpdate() {
+  try {
+    const boot = await fetchFPL('bootstrap-static/');
+    let currentEvent = null;
+    (boot.events || []).forEach(e => { if (e.is_current) currentEvent = e; });
+    if (!currentEvent) return;
+    const existing = allResults.filter(r => r.gw === currentEvent.id);
+    const needsUpdate = existing.length === 0 || !currentEvent.finished ||
+      (currentEvent.data_checked && existing.length > 0 &&
+       new Date(existing[0].updated_at) < new Date(currentEvent.data_checked));
+    if (needsUpdate) {
+      document.getElementById('last-updated').textContent = '🔄 自動更新中...';
+      await runUpdate(currentEvent.id);
+    }
+  } catch(e) {}
+}
+
+function startAutoUpdate() {
+  if (autoUpdateTimer) clearInterval(autoUpdateTimer);
+  autoUpdateTimer = setInterval(autoUpdate, AUTO_UPDATE_INTERVAL);
+  setTimeout(autoUpdate, 30000);
+}
+
+startAutoUpdate();
 </script>
 </body>
 </html>
