@@ -390,7 +390,7 @@ async function loadData() {
     const teamCodeMap = {};
     (boot.teams || []).forEach(t => { teamCodeMap[t.id] = t.code; });
     (boot.elements || []).forEach(el => {
-      elementData[el.id] = { name: el.web_name, pos: el.element_type, teamCode: teamCodeMap[el.team] || 0 };
+      elementData[el.id] = { name: el.web_name, pos: el.element_type, team: el.team, teamCode: teamCodeMap[el.team] || 0 };
     });
   } catch(e) {}
 
@@ -404,10 +404,24 @@ async function loadData() {
 
 async function preloadSquads(gw) {
   if (!gw) return;
-  let liveData = null;
-  try { liveData = await fetchFPL(`event/${gw}/live/`); } catch(e) { return; }
+  let liveData = null, fixtures = null;
+  try {
+    [liveData, fixtures] = await Promise.all([
+      fetchFPL(`event/${gw}/live/`),
+      fetchFPL(`fixtures/?event=${gw}`)
+    ]);
+  } catch(e) { return; }
+
   const liveMap = {};
-  (liveData.elements || []).forEach(e => { liveMap[e.id] = (e.stats && e.stats.total_points) || 0; });
+  (liveData.elements || []).forEach(e => {
+    liveMap[e.id] = (e.stats && e.stats.total_points) || 0;
+  });
+
+  const estBonus = calcEstimatedBonus(liveData, fixtures);
+  Object.keys(estBonus).forEach(id => {
+    if (liveMap[id] !== undefined) liveMap[id] += estBonus[id];
+  });
+
   for (const name of PLAYER_ORDER) {
     const entryId = PLAYER_MAP[name];
     const cacheKey = `${entryId}_${gw}`;
@@ -418,6 +432,38 @@ async function preloadSquads(gw) {
     } catch(e) {}
     await new Promise(r => setTimeout(r, 200));
   }
+}
+
+function calcEstimatedBonus(liveRes, fixtures) {
+  const bpsMap = {};
+  (liveRes.elements || []).forEach(e => {
+    bpsMap[e.id] = { bps: (e.stats && e.stats.bps) || 0, mins: (e.stats && e.stats.minutes) || 0 };
+  });
+  const estBonus = {};
+  (fixtures || []).forEach(f => {
+    if (!f.started || f.finished_provisional || f.finished) return;
+    const players = [];
+    Object.keys(bpsMap).forEach(id => {
+      const el = elementData[id];
+      if (!el) return;
+      if ((el.team === f.team_h || el.team === f.team_a) && bpsMap[id].mins > 0) {
+        players.push({ id: Number(id), bps: bpsMap[id].bps });
+      }
+    });
+    if (!players.length) return;
+    players.sort((a, b) => b.bps - a.bps);
+    const bonusPool = [3, 2, 1];
+    let poolIdx = 0, i = 0;
+    while (i < players.length && poolIdx < bonusPool.length) {
+      const currentBps = players[i].bps;
+      if (currentBps <= 0) break;
+      const tied = players.filter(p => p.bps === currentBps);
+      tied.forEach(p => { estBonus[p.id] = bonusPool[poolIdx]; });
+      poolIdx += tied.length;
+      i += tied.length;
+    }
+  });
+  return estBonus;
 }
 
 function shirtImg(teamCode, isBench) {
@@ -520,12 +566,15 @@ async function toggleSquad(entryId, gw, usedVC) {
     squadRow.innerHTML = `<td colspan="${colCount}"><div class="squad-container"><div class="squad-loading">⏳ 載入陣容...</div></div></td>`;
     if (dataRow) dataRow.insertAdjacentElement('afterend', squadRow);
     try {
-      const [picksRes, liveRes] = await Promise.all([
+      const [picksRes, liveRes, fixRes] = await Promise.all([
         fetchFPL(`entry/${entryId}/event/${gw}/picks/`),
-        fetchFPL(`event/${gw}/live/`)
+        fetchFPL(`event/${gw}/live/`),
+        fetchFPL(`fixtures/?event=${gw}`)
       ]);
       const liveMap = {};
       (liveRes.elements || []).forEach(e => { liveMap[e.id] = (e.stats && e.stats.total_points) || 0; });
+      const estBonus = calcEstimatedBonus(liveRes, fixRes);
+      Object.keys(estBonus).forEach(id => { if (liveMap[id] !== undefined) liveMap[id] += estBonus[id]; });
       const picks = picksRes.picks || [];
       squadCache[cacheKey] = { picks, liveMap };
       squadRow.querySelector('.squad-container').innerHTML = renderSquadContent(picks, liveMap);
